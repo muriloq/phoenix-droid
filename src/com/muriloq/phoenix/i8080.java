@@ -283,7 +283,8 @@ public class i8080 extends Object {
     private final int nxtpcb() {
         int pc = PC();
         int t = peekb(pc);
-        PC(++pc & 0xffff);
+        //PC(++pc & 0xffff);
+        PC(++pc);
         return t;
     }
 

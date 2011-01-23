@@ -20,6 +20,7 @@ import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.view.KeyEvent;
 
 
@@ -101,9 +102,10 @@ Phoenix memory map
 
 public class Phoenix extends i8080 {
     private Paint paint = new Paint();
-	private Canvas canvas;
 	private Bitmap backBitmap;
 	private Bitmap frontBitmap;
+    private Bitmap workBitmap;
+    private Canvas workCanvas;
 	
     private int characters[][]; // decoded characters, for each palette
 
@@ -117,9 +119,9 @@ public class Phoenix extends i8080 {
 
     public static final int WIDTH_PIXELS = 208;
     public static final int HEIGHT_PIXELS = 256;
-    public static final int SCALE_PIXELS = 1;
-    private static final int WIDTH = Phoenix.WIDTH_PIXELS * Phoenix.SCALE_PIXELS;
-	private static final int HEIGHT = Phoenix.HEIGHT_PIXELS * Phoenix.SCALE_PIXELS;
+    public float SCALE_PIXELS = 1;
+    private int WIDTH = Phoenix.WIDTH_PIXELS;
+	private int HEIGHT = Phoenix.HEIGHT_PIXELS;
 
     private byte[] chr = new byte [0x2000]; // CHARSET roms
 
@@ -136,7 +138,7 @@ public class Phoenix extends i8080 {
     private int[] gameControl = new int [8];
     private int interruptCounter = 0;
     
-    private boolean autoFrameSkip=true;
+    private boolean autoFrameSkip=false;
     private boolean realSpeed=true;
     private boolean mute=false;
     private int frameSkip = 1;
@@ -207,20 +209,29 @@ public class Phoenix extends i8080 {
     };
 	private int sleepTime;
     private boolean scrollRefresh;
+    private PhoenixLayout view;
+
 	
 
 //    private Sound sound;
 
-    public Phoenix(Bitmap surface){
+    public Phoenix(PhoenixLayout view){
         // Phoenix runs at 0.74 Mhz (?)
         super(0.74);
-        
-		this.canvas = new Canvas(surface);
-		this.backBitmap = Bitmap.createBitmap(WIDTH, HEIGHT,Config.ARGB_8888);
-		this.frontBitmap = Bitmap.createBitmap(WIDTH, HEIGHT,Config.ARGB_8888);
-
-        for ( int i=0;i<8;i++ ) gameControl[i]=1;
+//		this.canvas = new Canvas(surface);
+        this.view = view; 
+//
+//        for ( int i=0;i<8;i++ ) gameControl[i]=1;
 //        sound = new Sound();
+    }
+
+
+    public void setActualDimensions(int width, int height) {
+        this.SCALE_PIXELS = HEIGHT_PIXELS/ (float) height;
+        this.WIDTH = width;
+        this.HEIGHT = (int) (HEIGHT_PIXELS*WIDTH/WIDTH_PIXELS);
+        workBitmap = Bitmap.createBitmap(WIDTH_PIXELS, HEIGHT_PIXELS, Bitmap.Config.ARGB_8888);
+        workCanvas = new Canvas(workBitmap);
     }
 
 
@@ -236,6 +247,9 @@ public class Phoenix extends i8080 {
                 scrollRefresh = true;
             }
         }
+        // 26x32
+        // 4000-43ff 1Kb Video RAM Charset A (4340-43ff variables)
+        // 4800-4bff 1Kb Video RAM Charset B (4840-4bff variables)
         
         // Write on foreground
         if ( (addr >= 0x4000) && (addr <= 0x4340) ){
@@ -471,8 +485,8 @@ public class Phoenix extends i8080 {
         // Update speed indicator every second
         if ((interruptCounter % 60) == 0) {
             timeNow = System.currentTimeMillis();
-            msPerFrame = (int) (timeNow - timeBefore); // ms / frame
-            framesPerSecond = 1000 / (msPerFrame / 60); // frames / s
+            msPerFrame = (int) (timeNow - timeBefore) + 1; // ms / frame
+            framesPerSecond = 1000 / (msPerFrame / (float) 60); // frames / s
             timeBefore = timeNow;
         }
 
@@ -481,8 +495,17 @@ public class Phoenix extends i8080 {
 
 
     public void refreshScreen () {
+        if (backBitmap==null)
+            this.backBitmap = Bitmap.createBitmap(WIDTH_PIXELS, HEIGHT_PIXELS, Config.ARGB_8888);
+        
+        if (frontBitmap == null)
+            this.frontBitmap = Bitmap.createBitmap(WIDTH_PIXELS, HEIGHT_PIXELS, Config.ARGB_8888);
+
         if ( (!backgroundRefresh && !foregroundRefresh) && !scrollRefresh) return; 
         
+//      4000-43ff 1Kb Video RAM Charset A (4340-43ff variables)
+//      4800-4bff 1Kb Video RAM Charset B (4840-4bff variables)
+
         if (backgroundRefresh) {
             for (int a: dirtyBackground) {
                 int base = a - 0x4800;
@@ -492,7 +515,11 @@ public class Phoenix extends i8080 {
                 for ( int i=0;i<8;i++ ) {
                     for ( int j=0;j<8;j++ ) {
                         int c = characters[palette][character*64+j+i*8];
-                        backBitmap.setPixel(x*8+j,y*8+i, c);
+                        int px = x*8+j;
+                        int py = y*8+i;
+                        if ((px < 0) || (px >= WIDTH_PIXELS) || (py < 0) || (py >= HEIGHT_PIXELS))
+                            continue;
+                        backBitmap.setPixel(px,py, c);
                     }
                 }
             }
@@ -512,7 +539,11 @@ public class Phoenix extends i8080 {
                 for ( int i=0;i<8;i++ ) {
                     for ( int j=0;j<8;j++ ) {
                         int c = characters[palette][64*256+character*64+j+i*8];
-                        frontBitmap.setPixel(x*8+j,y*8+i, c);
+                        int px = x*8+j;
+                        int py = y*8+i;
+                        if ((px < 0) || (px >= WIDTH_PIXELS) || (py < 0) || (py >= HEIGHT_PIXELS))
+                               continue;
+                        frontBitmap.setPixel(px,py, c);
                     }
                 }
             }
@@ -521,34 +552,46 @@ public class Phoenix extends i8080 {
             foregroundRefresh = false;
             dirtyForeground.clear();
         }
-        paint.setColor(OPAQUE_BLACK);
-        canvas.drawRect(0, 0, WIDTH, HEIGHT, paint);
+        view.postInvalidate();
         
-        canvas.drawBitmap(backBitmap, 0, HEIGHT-scrollRegister, paint);
-		canvas.drawBitmap(backBitmap, 0,-scrollRegister,paint);
+    }
+    
+    public void onDraw(Canvas canvas){
+        if ((backBitmap==null) || (frontBitmap == null))
+            return; 
+          paint.setColor(OPAQUE_BLACK);
+          workCanvas.drawRect(0, 0, WIDTH, HEIGHT, paint);
+        
+        workCanvas.drawBitmap(backBitmap, 0, HEIGHT_PIXELS-scrollRegister, null);
+
+        
+        workCanvas.drawBitmap(backBitmap, 0,-scrollRegister,null);
+        
         scrollRefresh = false; 
         
-        canvas.drawBitmap(frontBitmap, 0,0, paint); 
+        workCanvas.drawBitmap(frontBitmap, 0,0, null); 
+        
+        canvas.drawBitmap(workBitmap, new Rect(0,0,WIDTH_PIXELS, HEIGHT_PIXELS), new Rect(0,0,WIDTH,HEIGHT), null); 
         
         paint.setColor(DKYELLOW);
-        canvas.drawText(Integer.toString((int)framesPerSecond),0,255, paint);
+        canvas.drawText(Integer.toString((int)framesPerSecond),0,HEIGHT-16, paint);
         
         paint.setColor(GREEN);
         if (!isRealSpeed())
-            canvas.drawText("S",WIDTH-24,255, paint);
+            canvas.drawText("S",WIDTH-24,HEIGHT-16, paint);
         
         if ( (isAutoFrameSkip()) && (getFrameSkip()!=1) )
-            canvas.drawText("A",WIDTH-32,255, paint);
+            canvas.drawText("A",WIDTH-32,HEIGHT-16, paint);
 
         if (isMute())
-            canvas.drawText("M",WIDTH-48,255, paint);
+            canvas.drawText("M",WIDTH-48,HEIGHT-16, paint);
 
         if (getFrameSkip() != 1)
-            canvas.drawText(Integer.toString((int)getFrameSkip()),WIDTH-16,255, paint);
-        
+            canvas.drawText(Integer.toString((int)getFrameSkip()),WIDTH-16,HEIGHT-16, paint);
     }
 
-    public void decodeChars () {
+    public void decodeChars (Canvas canvas) {
+        int[] pixels = new int[WIDTH_PIXELS*HEIGHT_PIXELS];
         characters = new int[2][512*64];
 
         for ( int s=0;s<2;s++ ) {               // Charset
@@ -579,7 +622,10 @@ public class Phoenix extends i8080 {
                              } else {
                                  paint.setColor(BLACK);
                              }
-                             canvas.drawRect(7-line+(c%26)*8,col+((int)c/26)*8+s*160,1,1,paint);
+                             int top = 7-line+(c%26)*8;
+                             int left = col+((int)c/26)*8+s*160;
+                             pixels[left*WIDTH_PIXELS+top]=paint.getColor(); 
+                             // canvas.drawRect(top,left,top+1,left+1,paint);
 
                              // Palette A
                              int color = colorTable[pixelColorIndex];
@@ -599,6 +645,10 @@ public class Phoenix extends i8080 {
             } // for c
 
         } // for s
+        if (canvas!=null) {
+            Bitmap bitmap = Bitmap.createBitmap(pixels, 0, WIDTH_PIXELS, WIDTH_PIXELS, HEIGHT_PIXELS, Bitmap.Config.ARGB_8888);
+            canvas.drawBitmap(bitmap, new Rect(0,0,WIDTH_PIXELS, HEIGHT_PIXELS), new Rect(0,0,WIDTH,HEIGHT),null);
+        }
     }
 
     public final boolean doKey( int down, int ascii) {
