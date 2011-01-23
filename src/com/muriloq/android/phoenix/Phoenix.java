@@ -209,13 +209,13 @@ public class Phoenix extends i8080 {
     };
 	private int sleepTime;
     private boolean scrollRefresh;
-    private PhoenixLayout view;
+    private PhoenixGame view;
 
 	
 
 //    private Sound sound;
 
-    public Phoenix(PhoenixLayout view){
+    public Phoenix(PhoenixGame view){
         // Phoenix runs at 0.74 Mhz (?)
         super(0.74);
 //		this.canvas = new Canvas(surface);

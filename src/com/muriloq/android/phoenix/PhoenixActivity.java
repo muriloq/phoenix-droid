@@ -11,7 +11,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 
 public class PhoenixActivity extends Activity {
-	private PhoenixLayout view;
+	private PhoenixGame view;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -20,7 +20,7 @@ public class PhoenixActivity extends Activity {
         LayoutInflater factory = LayoutInflater.from(this);
         
         // Set game layout
-        view = (PhoenixLayout) factory.inflate(R.layout.main, null);
+        view = (PhoenixGame) factory.inflate(R.layout.main, null);
         setContentView(view);
         
        
