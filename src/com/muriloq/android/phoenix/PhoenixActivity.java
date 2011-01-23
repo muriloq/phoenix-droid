@@ -39,21 +39,24 @@ public class PhoenixActivity extends Activity {
     @Override
     protected void onStop() {
     	super.onStop();
+    	view.onStop();  
     }
     
     @Override
     protected void onPause() {
     	super.onPause();
-    	onStop();
+    	view.onPause(); 
     }
     
     @Override
     protected void onRestart() {
     	super.onRestart();
+    	view.onRestart();
     }
     
     @Override
     protected void onDestroy(){
+        super.onDestroy(); 
 //     android.os.Debug.stopMethodTracing();
 
     }

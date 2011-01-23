@@ -9,10 +9,16 @@ public class PhoenixLayout extends LinearLayout {
 
     private Phoenix phoenix;
     
+    private boolean stop = false;
+    private boolean pause = false;
     private long sleepTime;
     private long timeNow;
     private long timeBefore;
     private long interruptCounter;
+
+    private Thread thread;
+
+    
 
     public PhoenixLayout(Context context) {
         super(context);
@@ -35,10 +41,12 @@ public class PhoenixLayout extends LinearLayout {
     }
     
     public void fire() {
-        new Thread(new Runnable(){
+        this.thread = new Thread(new Runnable(){
+            
+
             @Override
             public void run() {
-                while(true) {
+                while(!stop) {
                     timeBefore = System.currentTimeMillis();
                     boolean busy = false;
                         while (true) {
@@ -90,6 +98,16 @@ public class PhoenixLayout extends LinearLayout {
                                     sleepTime = 1;
                                 }
 
+                                // Check if should wait
+                                synchronized (this) {
+                                    while (pause) {
+                                        try {
+                                            wait();
+                                        } catch (Exception e) {
+                                        }
+                                    }
+                                }
+                                
                                 try {
                                     if (sleepTime > 0)
                                         Thread.sleep(sleepTime);
@@ -100,7 +118,8 @@ public class PhoenixLayout extends LinearLayout {
                         }
                     }
                 }
-            }).start();
+            });
+        thread.start();
     }
     
     public void setPhoenix(Phoenix phoenix) {
@@ -115,7 +134,24 @@ public class PhoenixLayout extends LinearLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         super.dispatchDraw(canvas);
-        phoenix.onDraw(canvas); 
+        phoenix.onDraw(canvas);
+    }
+
+    public void onStop() {
+        this.stop = true; 
+    }
+    
+    public void onPause() {
+        synchronized(thread){
+            this.pause = true;
+        }
+    }
+    
+    public void onRestart() {
+        synchronized (thread) {
+            this.pause = false;
+            thread.notify();
+        }
     }
 
 }
