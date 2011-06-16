@@ -57,6 +57,7 @@ public class PhoenixActivity extends Activity {
     @Override
     protected void onDestroy(){
         super.onDestroy(); 
+        view.onDestroy();
 //     android.os.Debug.stopMethodTracing();
 
     }

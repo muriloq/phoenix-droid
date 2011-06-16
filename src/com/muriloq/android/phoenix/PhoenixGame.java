@@ -1,8 +1,12 @@
 package com.muriloq.android.phoenix;
 
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.widget.LinearLayout;
 
 public class PhoenixGame extends LinearLayout {
@@ -11,6 +15,7 @@ public class PhoenixGame extends LinearLayout {
     
     private boolean stop = false;
     private boolean pause = false;
+    private boolean destroy = false;
     private long sleepTime;
     private long timeNow;
     private long timeBefore;
@@ -49,7 +54,7 @@ public class PhoenixGame extends LinearLayout {
                 while(!stop) {
                     timeBefore = System.currentTimeMillis();
                     boolean busy = false;
-                        while (true) {
+                        while (!destroy) {
                             phoenix.cycles++;
                             int pc = phoenix.PC();
            
@@ -152,6 +157,52 @@ public class PhoenixGame extends LinearLayout {
             this.pause = false;
             thread.notify();
         }
+    }
+    
+    public void onDestroy(){
+    	destroy = true;
+    }
+    
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		switch (event.getAction()) {
+		case MotionEvent.ACTION_DOWN:
+			doKey(1, KeyEvent.KEYCODE_MENU);
+			break;
+
+		case MotionEvent.ACTION_UP:
+			doKey(0, KeyEvent.KEYCODE_MENU);
+			break;
+		}
+		return super.onTouchEvent(event);
+	}
+	
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		doKey(1, keyCode);
+		return super.onKeyDown(keyCode, event);
+	}
+	
+	@Override
+	public boolean onKeyUp(int keyCode, KeyEvent event) {
+		doKey(0, keyCode);
+		return super.onKeyUp(keyCode, event);
+	}
+    
+    protected void doKey(int down, int ascii){
+    	switch (ascii) {
+		case KeyEvent.KEYCODE_DPAD_UP:
+			ascii='3';
+			break;
+		case KeyEvent.KEYCODE_MENU:
+			ascii=32;
+			break;	
+		case KeyEvent.KEYCODE_DPAD_CENTER:
+			ascii='1';
+			break;
+		}
+    	Log.d("Game","Press "+ascii+" down "+down);
+    	phoenix.doKey(down, ascii);
     }
 
 }

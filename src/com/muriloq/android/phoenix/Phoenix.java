@@ -2,6 +2,7 @@ package com.muriloq.android.phoenix;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import com.muriloq.phoenix.i8080;
 
@@ -21,6 +22,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.util.Log;
 import android.view.KeyEvent;
 
 
@@ -321,7 +323,7 @@ public class Phoenix extends i8080 {
         return;
     }
 
-    public int peekb(int addr) {
+	public int peekb(int addr) {
         addr &= 0xffff;
         
         // are we reading dip switch memory ?
@@ -653,23 +655,24 @@ public class Phoenix extends i8080 {
 
     public final boolean doKey( int down, int ascii) {
     	switch ( ascii ) {
-        case '3':  	gameControl[0]=1-down;    break; // Coin
-        case '1':  	gameControl[1]=1-down;    break; // Start 1
-        case '2':  	gameControl[2]=1-down;    break; // Start 2
-        case 32 :  	gameControl[4]=1-down;    break; // Fire
-        case 'a': case 'A': if (down==0) this.autoFrameSkip = !autoFrameSkip; break;   // toggle auto frame skip
-        case 's': case 'S': if (down==0) this.realSpeed = !realSpeed; setFrameSkip(1); break;   // toggle speed limiter
-        case 'm': case 'M': if (down==0) this.mute = !mute; break;   // toggle speed limiter
-        case KeyEvent.KEYCODE_DPAD_RIGHT:   gameControl[5]=1-down;   break;   // Right
-        case KeyEvent.KEYCODE_DPAD_LEFT:   	 gameControl[6]=1-down;  break;  // Left
-        case KeyEvent.KEYCODE_DPAD_DOWN:   gameControl[7]=1-down;    break;  // Barrier
-        case KeyEvent.KEYCODE_MINUS:  setFrameSkip(getFrameSkip() - down); 
-            if ( getFrameSkip() < 1 ) setFrameSkip(1);             // Decrease frame skip
-            break;
-        case KeyEvent.KEYCODE_PLUS:  setFrameSkip(getFrameSkip() + down);       // Increase frame skip
-            break;
+	        case '3':  	gameControl[0]=1-down;    break; // Coin
+	        case '1':  	gameControl[1]=1-down;    break; // Start 1
+	        case '2':  	gameControl[2]=1-down;    break; // Start 2
+	        case 32 :  	gameControl[4]=1-down;    break; // Fire
+	        case 'a': case 'A': if (down==0) this.autoFrameSkip = !autoFrameSkip; break;   // toggle auto frame skip
+	        case 's': case 'S': if (down==0) this.realSpeed = !realSpeed; setFrameSkip(1); break;   // toggle speed limiter
+	        case 'm': case 'M': if (down==0) this.mute = !mute; break;   // toggle speed limiter
+	        case KeyEvent.KEYCODE_DPAD_RIGHT:   gameControl[5]=1-down;   break;   // Right
+	        case KeyEvent.KEYCODE_DPAD_LEFT:   	 gameControl[6]=1-down;  break;  // Left
+	        case KeyEvent.KEYCODE_DPAD_DOWN:   gameControl[7]=1-down;    break;  // Barrier
+	        case KeyEvent.KEYCODE_MINUS:  setFrameSkip(getFrameSkip() - down); 
+	            if ( getFrameSkip() < 1 ) setFrameSkip(1);             // Decrease frame skip
+	            break;
+	        case KeyEvent.KEYCODE_PLUS:  setFrameSkip(getFrameSkip() + down);       // Increase frame skip
+	            break;
           
         }
+    	Log.d("Pheonix","Gamecontrol "+ Arrays.toString(gameControl));
         return true;
     }
 
