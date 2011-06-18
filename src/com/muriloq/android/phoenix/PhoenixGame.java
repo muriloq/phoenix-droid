@@ -1,10 +1,12 @@
 package com.muriloq.android.phoenix;
 
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Display;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.widget.LinearLayout;
@@ -31,6 +33,8 @@ public class PhoenixGame extends LinearLayout {
     public PhoenixGame(Context context, AttributeSet attrs) {
         super(context, attrs);
         this.phoenix = new Phoenix(this);
+        Display display = ((Activity) context).getWindowManager().getDefaultDisplay(); 
+        this.phoenix.setActualDimensions(display.getWidth(), display.getHeight());
     }
 
     @Override

@@ -32,7 +32,7 @@ public class PhoenixActivity extends Activity {
         // Enable view key events
 		view.setFocusable(true);
 		view.setFocusableInTouchMode(true);
-        
+		
 	}
 
     
