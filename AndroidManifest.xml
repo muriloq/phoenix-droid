@@ -10,19 +10,21 @@
     	android:icon="@drawable/icon" 
     	android:label="@string/app_name" android:debuggable="true" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
      	 
-        <activity android:name=".PhoenixActivity"
-                  android:label="@string/app_name" android:screenOrientation="portrait">
+        <activity android:label="@string/app_name" android:name="PhoenixLaunch">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-			      <intent-filter>
-			        <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
-			      </intent-filter>
-			
-			      <meta-data android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
-			        android:resource="@xml/accessory_filter" />
         </activity>
+        <activity android:name="AccessoryPhoenixActivity" android:screenOrientation="portrait" >
+            <intent-filter>
+              <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
+            </intent-filter>
+      
+            <meta-data android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
+              android:resource="@xml/accessory_filter" />
+        </activity>
+        <activity android:name="ScreenPhoenixActivity" android:screenOrientation="portrait" ></activity>
         <uses-library android:name="com.android.future.usb.accessory" android:required="true"></uses-library>
 
     </application>
