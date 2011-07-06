@@ -2,16 +2,15 @@ package com.muriloq.android.phoenix.controller;
 
 import android.view.View;
 
+import com.muriloq.android.phoenix.ButtonState;
 import com.muriloq.android.phoenix.ButtonType;
 import com.muriloq.android.phoenix.Direction;
 
 public abstract class Controller {
   
   public interface InputListener {
-    public void onButtonPress(ButtonType button);
-    public void onButtonRelease(ButtonType button);
-    public void onJoystickPress(Direction direction);
-    public void onJoystickRelease(Direction direction);
+    public void onButton(ButtonType button, ButtonState state);
+    public void onJoystick(Direction direction, ButtonState state);
     public void onCoinInserted();
   }
   

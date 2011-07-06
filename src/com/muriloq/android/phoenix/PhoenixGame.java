@@ -237,12 +237,8 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
   }
 
   @Override
-  public void onButtonPress(ButtonType button) {
-    phoenix.setGameControlFlags(convertButtonToControlPos(button), false);
-  }
-  @Override
-  public void onButtonRelease(ButtonType button) {
-    phoenix.setGameControlFlags(convertButtonToControlPos(button), true);
+  public void onButton(ButtonType button, ButtonState state) {
+    phoenix.setGameControlFlags(convertButtonToControlPos(button), state==ButtonState.RELEASE);
   }
   @Override
   public void onCoinInserted() {
@@ -255,17 +251,10 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
     }, 1, TimeUnit.SECONDS);
   }
   @Override
-  public void onJoystickPress(Direction direction) {
-    onJoystick(direction, true);
-  }
-  @Override
-  public void onJoystickRelease(Direction direction) {
-    onJoystick(direction, false);
-  }
-  protected void onJoystick(Direction direction, boolean down) {
+  public void onJoystick(Direction direction, ButtonState state) {
     int control=convertJoystickToControlPos(direction);
     if (control>=0) {
-      phoenix.setGameControlFlags(control, down);
+      phoenix.setGameControlFlags(control, state==ButtonState.PRESS);
     }
   }
   

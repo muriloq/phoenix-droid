@@ -38,6 +38,8 @@ import android.widget.TextView;
 
 import com.android.future.usb.UsbAccessory;
 import com.android.future.usb.UsbManager;
+import com.muriloq.android.phoenix.ButtonState;
+import com.muriloq.android.phoenix.ButtonType;
 import com.muriloq.android.phoenix.Direction;
 import com.muriloq.android.phoenix.R;
 
@@ -58,7 +60,6 @@ public class AccessoryController extends Controller implements Runnable {
 	FileOutputStream mOutputStream;
 
 	private static final int MESSAGE_SWITCH = 1;
-	private static final int MESSAGE_JOY = 4;
 
 	private TextView mLogPanel;
 	private View mControllerView;
@@ -112,7 +113,6 @@ public class AccessoryController extends Controller implements Runnable {
 
 	public void handleResume(Activity activity) {
 
-		Intent intent = activity.getIntent();
 		if (mInputStream != null && mOutputStream != null) {
 			return;
 		}
@@ -153,16 +153,16 @@ public class AccessoryController extends Controller implements Runnable {
 	
 	
   protected class SwitchMsg {
-    private byte sw;
+    private byte button;
     private byte state;
 
-    public SwitchMsg(byte sw, byte state) {
-      this.sw = sw;
+    public SwitchMsg(byte button, byte state) {
+      this.button = button;
       this.state = state;
     }
 
-    public byte getSw() {
-      return sw;
+    public byte getButton() {
+      return button;
     }
 
     public byte getState() {
@@ -255,12 +255,19 @@ public class AccessoryController extends Controller implements Runnable {
 	protected void logToWindow(final String message) {
 	  mUiHandler.post(new Runnable() {
       public void run() {
-        mLogPanel.append(message);
+        mLogPanel.setText(message);
       }
     });
 	}
 	
-	public void run() {
+  private final byte BUTTON_FIRE=0;
+  private final byte BUTTON_SHIELD=1;
+  private final byte BUTTON_DOWN=2;
+  private final byte BUTTON_LEFT=3;
+	private final byte BUTTON_UP=4;
+  private final byte BUTTON_RIGHT=5;
+
+  public void run() {
 		int ret = 0;
 		byte[] buffer = new byte[16384];
 		int i;
@@ -278,26 +285,14 @@ public class AccessoryController extends Controller implements Runnable {
 
 				logToWindow("got message from accessory:"+len+"bytes - first is 0x"+Integer.toHexString(buffer[i])+"\n");
 
-				switch (buffer[i]) {
-				case 0x1:
-					if (len >= 3) {
-						Message m = Message.obtain(mHandler, MESSAGE_JOY);
-						m.obj = new JoyMsg(buffer[i + 1], buffer[i + 2]);
-						mHandler.sendMessage(m);
-					}
-					i += 3;
-					break;
-
-        case 0x2:
-          if (len >= 3) {
-            Message m = Message.obtain(mHandler, MESSAGE_SWITCH);
+				if (buffer[i]==1) {  // buttons
+          if (len == 3) {
+            Message m = Message.obtain(mHandler, buffer[i]);
             m.obj = new SwitchMsg(buffer[i + 1], buffer[i + 2]);
             mHandler.sendMessage(m);
           }
-          i += 3;
-          break;
-
-				default:
+          i += len;
+				} else {
 				  String message="unknown msg: " + buffer[i];
 			    Log.d(TAG, message);
 			    logToWindow(message+"\n");
@@ -317,12 +312,6 @@ public class AccessoryController extends Controller implements Runnable {
 				SwitchMsg o = (SwitchMsg) msg.obj;
 				handleSwitchMessage(o);
 				break;
-
-			case MESSAGE_JOY:
-				JoyMsg j = (JoyMsg) msg.obj;
-				handleJoyMessage(j);
-				break;
-
 			}
 		}
 	};
@@ -344,30 +333,27 @@ public class AccessoryController extends Controller implements Runnable {
 		}
 	}
 
-	protected void handleJoyMessage(JoyMsg j) {
-    String message="joystick message";
+	protected void handleSwitchMessage(SwitchMsg o) {
+    String message="button pressed="+o.getButton()+" state="+o.getState();
     Log.d(TAG, message);
     logToWindow(message+"\n");
-	  if (getInputListener()!=null) {
-      getInputListener().onJoystickRelease(Direction.DOWN);
-      getInputListener().onJoystickRelease(Direction.LEFT);
-      getInputListener().onJoystickRelease(Direction.RIGHT);
-      getInputListener().onJoystickRelease(Direction.UP);
-	    Direction d=convertAnalogToDigitalJoy(j.x, j.y);
-	    message="joystick x="+j.x+" y="+j.y+"  direction="+d;
-	    Log.d(TAG, message);
-      logToWindow(message+"\n");
-	    if (d!=null) {
-	      getInputListener().onJoystickPress(d);
-	    }
-	  }
-	}
-
-	private Direction convertAnalogToDigitalJoy(int x, int y) {
-    return null;
-  }
-
-	protected void handleSwitchMessage(SwitchMsg o) {
+    if (getInputListener()!=null) {
+      ButtonState state=o.getState()==0?ButtonState.PRESS:ButtonState.RELEASE;
+      switch (o.getButton()) {
+      case (BUTTON_FIRE): 
+        getInputListener().onButton(ButtonType.FIRE, state);
+        getInputListener().onButton(ButtonType.START1, state);
+        break;
+      case (BUTTON_SHIELD): getInputListener().onButton(ButtonType.SHIELD, state);break;
+      case (BUTTON_DOWN): getInputListener().onJoystick(Direction.DOWN, state); break;
+      case (BUTTON_UP): 
+        getInputListener().onJoystick(Direction.UP, state); 
+        if (state==ButtonState.RELEASE) getInputListener().onCoinInserted(); 
+        break;
+      case (BUTTON_LEFT): getInputListener().onJoystick(Direction.LEFT, state); break;
+      case (BUTTON_RIGHT): getInputListener().onJoystick(Direction.RIGHT, state); break;
+      }
+    }
 	}
 
 }

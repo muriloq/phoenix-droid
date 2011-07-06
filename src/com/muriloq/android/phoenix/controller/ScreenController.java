@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.View.OnKeyListener;
 import android.view.View.OnTouchListener;
 
+import com.muriloq.android.phoenix.ButtonState;
 import com.muriloq.android.phoenix.ButtonType;
 import com.muriloq.android.phoenix.R;
 
@@ -46,11 +47,8 @@ public class ScreenController extends Controller {
 
   protected boolean handleButtonTouch(ButtonType button, MotionEvent event) {
     if (getInputListener()!=null) {
-      if (event.getAction()==MotionEvent.ACTION_DOWN) {
-        getInputListener().onButtonPress(button);
-      } else {
-        getInputListener().onButtonRelease(button);
-      }
+      ButtonState state=event.getAction()==MotionEvent.ACTION_DOWN?ButtonState.PRESS:ButtonState.RELEASE;
+      getInputListener().onButton(button, state);
       return true;
     }
     return false;
@@ -90,13 +88,8 @@ public class ScreenController extends Controller {
       }
       
       if (getInputListener()!=null) {
-        if (event.getAction()==MotionEvent.ACTION_DOWN) {
-          getInputListener().onButtonPress(type);
-          Log.d(TAG, "button "+type.name()+" pressed");
-        } else {
-          getInputListener().onButtonRelease(type);
-          Log.d(TAG, "button "+type.name()+" released");
-        }
+        ButtonState state=event.getAction()==MotionEvent.ACTION_DOWN?ButtonState.PRESS:ButtonState.RELEASE;
+        getInputListener().onButton(type, state);
       }
       return true;
     }
@@ -127,13 +120,9 @@ public class ScreenController extends Controller {
       }
 
       if (button!=null) {
-        if (event.getAction()==MotionEvent.ACTION_DOWN) {
-          Log.d(TAG, "button "+button.name()+" pressed");
-          getInputListener().onButtonPress(button);
-        } else {
-          Log.d(TAG, "button "+button.name()+" released");
-          getInputListener().onButtonRelease(button);
-        }
+        ButtonState state=event.getAction()==MotionEvent.ACTION_DOWN?ButtonState.PRESS:ButtonState.RELEASE;
+        Log.d(TAG, "button "+button.name()+" pressed");
+        getInputListener().onButton(button, state);
       }
       return true;
     }
