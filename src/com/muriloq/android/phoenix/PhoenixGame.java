@@ -28,7 +28,7 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
   private long sleepTime;
   private long timeNow;
   private long timeBefore;
-  private long interruptCounter;
+//  private long interruptCounter;
 
   private Thread thread;
 
@@ -135,7 +135,7 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
 
             if (phoenix.cycles == 0) {
               phoenix.interrupt();
-              interruptCounter++;
+//              interruptCounter++;
               timeNow = System.currentTimeMillis();
               int msPerFrame = (int) (timeNow - timeBefore);
               sleepTime = 1000 / 60 - msPerFrame;
@@ -152,7 +152,7 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
                 }
               }
 
-              if (phoenix.isRealSpeed() || (sleepTime < 0)) {
+              if (!phoenix.isRealSpeed() || (sleepTime < 0)) {
                 sleepTime = 1;
               }
 
