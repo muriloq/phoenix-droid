@@ -1,9 +1,12 @@
-package com.muriloq.gwt.phoenix.client;
+package com.muriloq.android.phoenix;
+
+import android.media.AudioTrack;
 
 public class TMS36XX implements Runnable {
     private byte[] buffer;
+    private AudioTrack track; 
 //     private SourceDataLine line;
-//     private Thread thread;
+     private Thread thread;
     private boolean running=true;
 
     public static final boolean VERBOSE=true;
@@ -465,19 +468,22 @@ public class TMS36XX implements Runnable {
         //System.out.println(("%s\n", bits ? "" : " none"));
     }
 
-//    public TMS36XX (SourceDataLine line, byte[] buffer) {
-//        this.line = line;
-//        this.buffer = buffer;
-//        thread = new Thread(this,"Music");
-//        thread.start();
-//    }
-//
-//
+    public TMS36XX (AudioTrack track, byte[] buffer) {
+        this.track = track;
+        this.buffer = buffer;
+        thread = new Thread(this,"Music");
+        thread.start();
+    }
+
+
     public void run() {
         while (running) {
             this.sound_update(buffer, buffer.length);
+            track.write(buffer,0,buffer.length);
 //            line.write(buffer,0,buffer.length);
         }
+        track.flush();
+        track.stop();
 //        line.drain();
 //        line.stop();
 //        line.close();

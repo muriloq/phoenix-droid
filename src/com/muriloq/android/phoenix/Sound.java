@@ -1,4 +1,8 @@
-package com.muriloq.gwt.phoenix.client;
+package com.muriloq.android.phoenix;
+
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
 
 /****************************************************************************
  *
@@ -96,20 +100,21 @@ public class Sound implements Runnable {
     private int nLowpass_polybit;
 
     private int sampleRate = 40000;
-//    private int playback_freq = 40000;
+    private int playback_freq = 40000;
     private int buffer_size = 20000;
     private byte[] buffer;
 
-//    private int music_buffer_size = 20000;
-//    private byte[] music_buffer;
+    private int music_buffer_size = 20000;
+    private byte[] music_buffer;
 
 //    private Mixer mixer;
 //    private SourceDataLine line;
 //    private SourceDataLine musicLine;
 
-//    private Thread thread;
+    private Thread thread;
     private boolean running = true;
     private TMS36XX music;
+	private AudioTrack audiotrack;
 
     public Sound() {
         int shiftreg = 0;
@@ -138,14 +143,22 @@ public class Sound implements Runnable {
 //        }
 //        this.mixer = AudioSystem.getMixer(mixerInfo[0]);
 //
-//        this.buffer = new byte[buffer_size];
-//        this.music_buffer = new byte[music_buffer_size];
+        this.buffer = new byte[buffer_size];
+        this.music_buffer = new byte[music_buffer_size];
 //
 //        AudioFormat format = new AudioFormat(AudioFormat.Encoding.PCM_UNSIGNED, (float) playback_freq, 8, 1, 1, playback_freq, true);
 //
 //        DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
-//        thread = new Thread(this, "TIA");
-//        thread.start();
+        
+//        int minSize =AudioTrack.getMinBufferSize( 44100, AudioFormat.CHANNEL_CONFIGURATION_MONO, AudioFormat.ENCODING_PCM_8BIT );        
+        
+        audiotrack = new AudioTrack(AudioManager.STREAM_MUSIC,playback_freq,AudioFormat.CHANNEL_CONFIGURATION_MONO, AudioFormat.ENCODING_PCM_8BIT, 
+                buffer_size, AudioTrack.MODE_STREAM);
+        
+        audiotrack.write(buffer,0,buffer_size);
+        thread = new Thread(this, "TIA");
+        thread.start();
+        audiotrack.play();
 //        if (!AudioSystem.isLineSupported(info)) {
 //            System.out.println("DataLine not supported in this AudioSystem:" + info);
 //        }
@@ -159,6 +172,13 @@ public class Sound implements Runnable {
 //            musicLine.open(format, buffer_size);
 //            musicLine.start();
 //            music = new TMS36XX(musicLine, music_buffer);
+        
+        AudioTrack musictrack = new AudioTrack(AudioManager.STREAM_MUSIC,playback_freq,AudioFormat.CHANNEL_CONFIGURATION_MONO, AudioFormat.ENCODING_PCM_8BIT, 
+                music_buffer_size, AudioTrack.MODE_STREAM);
+        
+        musictrack.write(buffer,0,music_buffer_size);
+        music = new TMS36XX(audiotrack, music_buffer);
+        musictrack.play();
 //        } catch (LineUnavailableException e) {
 //            System.out.println("DataLine not available.");
 //        }
@@ -458,7 +478,10 @@ public class Sound implements Runnable {
         while (running) {
             process(buffer, buffer_size);
 //            line.write(buffer, 0, buffer_size);
+            audiotrack.write(buffer, 0, buffer_size);
         }
+        audiotrack.flush();
+        audiotrack.stop();
 //        line.drain();
 //        line.stop();
 //        line.close();

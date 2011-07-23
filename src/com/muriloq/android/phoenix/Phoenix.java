@@ -226,7 +226,7 @@ public class Phoenix extends i8080 {
 
 
 
-  //    private Sound sound;
+      private Sound sound;
 
   public Phoenix(PhoenixGame view){
     // Phoenix runs at 0.74 Mhz (?)
@@ -235,7 +235,7 @@ public class Phoenix extends i8080 {
     this.view = view; 
     //
     //        for ( int i=0;i<8;i++ ) gameControl[i]=1;
-    //        sound = new Sound();
+            sound = new Sound();
   }
 
 
@@ -282,7 +282,7 @@ public class Phoenix extends i8080 {
     if ( addr >= 0x6000 && addr <= 0x63ff) {
       if ( peekb(addr)!=newByte ) {
         mem[addr] = newByte;
-        // sound.updateControlA((byte)newByte);
+        sound.updateControlA((byte)newByte);
         if (!isMute()) {
           //                    if ( newByte==143 ) explosionSFX.play ();
           //                    if ( (newByte>101)&&(newByte<107) ) laserSFX.play ();
@@ -295,7 +295,7 @@ public class Phoenix extends i8080 {
     if ( addr >= 0x6800 && addr <= 0x6bff) {
       if ( peekb(addr)!=newByte ) {
         mem[ addr ] = newByte;
-        // sound.updateControlB((byte) newByte);
+        sound.updateControlB((byte) newByte);
         if (!isMute()){
           //                    if ( newByte==12 ) shieldSFX.play ();
           //                    if ( newByte==2 ) hitSFX.play ();
