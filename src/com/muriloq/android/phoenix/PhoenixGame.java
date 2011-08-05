@@ -12,6 +12,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -20,6 +21,8 @@ import com.muriloq.android.phoenix.controller.Controller;
 
 public class PhoenixGame extends LinearLayout implements Controller.InputListener {
 
+  private static final String TAG="PHOENIX";
+  
   private Phoenix phoenix;
 
   private boolean stop = false;
@@ -80,10 +83,15 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
     }
     System.out.println(readbytes + " bytes");
   }
+  
   public void setController(Controller controller) {
     controller.setInputListener(this);
     View controllerView=controller.createControllerWidget();
     if (controllerView!=null) this.addView(controllerView, this.getChildCount());
+
+    /*/ Enable view key events
+    setFocusable(true);
+    setFocusableInTouchMode(true);*/
   }
 
   @Override
@@ -238,20 +246,24 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
 
   @Override
   public void onButton(ButtonType button, ButtonState state) {
+    Log.d(TAG, "button="+button+" state="+state);
     phoenix.setGameControlFlags(convertButtonToControlPos(button), state==ButtonState.RELEASE);
   }
   @Override
   public void onCoinInserted() {
+    Log.d(TAG, "coin inserted");
     // TODO: check if this is the best way to handle press+release events
     phoenix.setGameControlFlags(Phoenix.CONTROL_COIN, true);
     scheduler.schedule(new Runnable() {
       public void run() {
+        Log.d(TAG, "coin insertion auto release");
         phoenix.setGameControlFlags(Phoenix.CONTROL_COIN, false);
       }
     }, 1, TimeUnit.SECONDS);
   }
   @Override
   public void onJoystick(Direction direction, ButtonState state) {
+    Log.d(TAG, "joystick "+direction+" state="+state);
     int control=convertJoystickToControlPos(direction);
     if (control>=0) {
       phoenix.setGameControlFlags(control, state==ButtonState.PRESS);

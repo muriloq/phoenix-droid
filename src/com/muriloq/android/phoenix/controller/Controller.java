@@ -1,5 +1,6 @@
 package com.muriloq.android.phoenix.controller;
 
+import android.app.Activity;
 import android.view.View;
 
 import com.muriloq.android.phoenix.ButtonState;
@@ -26,8 +27,23 @@ public abstract class Controller {
   
   public abstract void showScore(int score);
   public abstract View createControllerWidget();
-  
-  // put other cool interfaces, like to blinking android's eyes sometimes, 
+
+
+  // put other interfaces, like to blinking android's eyes sometimes, 
   // or to light some rbg leds when the user wins
 
+  
+  public Object handleRetainNonConfigurationInstance(Activity activity) {
+    return null;
+  }
+
+  public void handleDestroy(Activity activity) {
+  }
+
+  public void handleResume(Activity activity) {
+  }
+
+  public void handlePause() {
+  }
+   
 }

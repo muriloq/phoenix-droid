@@ -1,43 +1,30 @@
 package com.muriloq.android.phoenix;
 
+import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
-import com.muriloq.android.phoenix.controller.AccessoryController;
+public class AccessoryPhoenixActivity extends Activity {
 
-public class AccessoryPhoenixActivity extends PhoenixActivity {
-
-  private AccessoryController mAccessoryController;
-
+  private static final String TAG="PHOENIX";
+  
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    mAccessoryController=new AccessoryController(this);
-    view.setController(mAccessoryController);
+    Intent intent=new Intent(this, PhoenixActivity.class);
+    intent.putExtra(PhoenixActivity.CONTROLLER_TYPE_KEY, PhoenixActivity.CONTROLLER_ACCESSORY);
     
-    mAccessoryController.handleCreate(this);
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+        | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+    try {
+      startActivity(intent);
+    } catch (ActivityNotFoundException e) {
+      Log.e(TAG, "unable to start Phoenix activity", e);
+    }
+    finish();
   }
   
-  @Override
-  protected void onPause() {
-    super.onPause();
-    mAccessoryController.handlePause();
-  }
-
-  @Override
-  protected void onDestroy() {
-    super.onDestroy();
-    mAccessoryController.handleDestroy(this);
-  }
-  
-  @Override
-  protected void onResume() {
-    super.onResume();
-    mAccessoryController.handleResume(this);
-  }
-  
-  @Override
-  public Object onRetainNonConfigurationInstance() {
-    return mAccessoryController.handleRetainNonConfigurationInstance(this);
-  }
 }

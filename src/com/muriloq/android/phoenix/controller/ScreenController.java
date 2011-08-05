@@ -1,22 +1,23 @@
 package com.muriloq.android.phoenix.controller;
 
 import android.content.Context;
+import android.os.Handler;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnKeyListener;
-import android.view.View.OnTouchListener;
 
 import com.muriloq.android.phoenix.ButtonState;
 import com.muriloq.android.phoenix.ButtonType;
+import com.muriloq.android.phoenix.Direction;
 import com.muriloq.android.phoenix.R;
 
 
 public class ScreenController extends Controller {
 
-  private static final String TAG = "ScreenController";
+  private static final String TAG = "PHOENIX";
   
   private View mControllerView;
   
@@ -24,16 +25,33 @@ public class ScreenController extends Controller {
     LayoutInflater factory = LayoutInflater.from(context);
     
     mControllerView=factory.inflate(R.layout.screen_controller, null);
-    mControllerView.setOnTouchListener(new TouchController());
     mControllerView.setOnKeyListener(new KeyListener());
-    mControllerView.findViewById(R.id.fire).setOnTouchListener(new View.OnTouchListener() {
+    mControllerView.setOnTouchListener(new View.OnTouchListener() {
+      @Override
       public boolean onTouch(View v, MotionEvent event) {
-        return handleButtonTouch(ButtonType.FIRE, event);
+        if (event.getAction()==MotionEvent.ACTION_DOWN ||
+            event.getAction()==MotionEvent.ACTION_UP) {
+          if (event.getX()<v.getWidth()/2) {
+            getInputListener().onJoystick(Direction.LEFT, event.getAction()==MotionEvent.ACTION_DOWN?ButtonState.PRESS:ButtonState.RELEASE);
+          }
+          return true;
+        }
+        return false;
       }
     });
-    mControllerView.findViewById(R.id.start1).setOnTouchListener(new View.OnTouchListener() {
-      public boolean onTouch(View v, MotionEvent event) {
-        return handleButtonTouch(ButtonType.START1, event);
+    
+    mControllerView.findViewById(R.id.fire).setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View v) {
+        v.setEnabled(false);
+        startAutofire();
+      }
+    });
+    mControllerView.findViewById(R.id.start1).setOnClickListener(new View.OnClickListener() {
+      
+      @Override
+      public void onClick(View v) {
+        handleButtonClick(ButtonType.START1);
       }
     });
     mControllerView.findViewById(R.id.coin).setOnClickListener(new View.OnClickListener() {
@@ -45,10 +63,36 @@ public class ScreenController extends Controller {
     });
   }
 
-  protected boolean handleButtonTouch(ButtonType button, MotionEvent event) {
+  private Handler mHandler=new Handler();
+  
+  class RestoreButtonState implements Runnable {
+    private ButtonType type;
+    public RestoreButtonState(ButtonType type) {
+      this.type=type;
+    }
+    public void run() {
+      getInputListener().onButton(type, ButtonState.RELEASE);
+    }
+  }
+
+  class AutoFire implements Runnable {
+    boolean pressed; 
+    public void run() {
+      getInputListener().onButton(ButtonType.FIRE, 
+          pressed?ButtonState.RELEASE:ButtonState.PRESS);
+      pressed=!pressed;
+      mHandler.postDelayed(this, pressed?50:200);
+    }
+  }
+
+  protected void startAutofire() {
+    mHandler.post(new AutoFire());
+  }
+  
+  protected boolean handleButtonClick(ButtonType button) {
     if (getInputListener()!=null) {
-      ButtonState state=event.getAction()==MotionEvent.ACTION_DOWN?ButtonState.PRESS:ButtonState.RELEASE;
-      getInputListener().onButton(button, state);
+      getInputListener().onButton(button, ButtonState.PRESS);
+      mHandler.postDelayed(new RestoreButtonState(button), 100);
       return true;
     }
     return false;
@@ -62,39 +106,6 @@ public class ScreenController extends Controller {
   public void showScore(int score) {
     // don't need to do anything here. score will be shown by the ROM itself
   }
-
-  protected class TouchController implements OnTouchListener {
-    Float limit1, limit2, limit3;
-
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
-      if (getInputListener()==null) {
-        return false;
-      }
-      if (limit1==null) {
-        limit1=v.getWidth()*0.25f;
-        limit2=v.getWidth()*0.50f;
-        limit3=v.getWidth()*0.75f;
-      }
-      ButtonType type=null;
-      if (event.getX()<limit1) {
-        type=ButtonType.START1;
-      } else if (event.getX()<limit2) {
-        type=ButtonType.START2;
-      } else if (event.getX()<limit3) {
-        type=ButtonType.SHIELD;
-      } else {
-        type=ButtonType.FIRE;
-      }
-      
-      if (getInputListener()!=null) {
-        ButtonState state=event.getAction()==MotionEvent.ACTION_DOWN?ButtonState.PRESS:ButtonState.RELEASE;
-        getInputListener().onButton(type, state);
-      }
-      return true;
-    }
-  }
-  
 
   protected class KeyListener implements OnKeyListener {
     @Override
@@ -127,6 +138,5 @@ public class ScreenController extends Controller {
       return true;
     }
   }
-  
-  
+ 
 }

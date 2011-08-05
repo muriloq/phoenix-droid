@@ -44,14 +44,13 @@ import com.muriloq.android.phoenix.Direction;
 import com.muriloq.android.phoenix.R;
 
 public class AccessoryController extends Controller implements Runnable {
-	private static final String TAG = "Phoenix";
+	private static final String TAG = "PHOENIX";
 
 	private static final String ACTION_USB_PERMISSION = "com.google.android.DemoKit.action.USB_PERMISSION";
 
 	private Handler mUiHandler;
 	
 	private UsbManager mUsbManager;
-	private PendingIntent mPermissionIntent;
 	private boolean mPermissionRequestPending;
 
 	UsbAccessory mAccessory;
@@ -59,14 +58,12 @@ public class AccessoryController extends Controller implements Runnable {
 	FileInputStream mInputStream;
 	FileOutputStream mOutputStream;
 
-	private static final int MESSAGE_SWITCH = 1;
-
 	private TextView mLogPanel;
 	private View mControllerView;
 	
-	public AccessoryController(Context context) {
+	public AccessoryController(Activity activity) {
 	  mUiHandler=new Handler();
-    LayoutInflater factory = LayoutInflater.from(context);
+    LayoutInflater factory = LayoutInflater.from(activity);
     mControllerView=factory.inflate(R.layout.accessory_controller, null);
     mLogPanel=(TextView) mControllerView.findViewById(R.id.log);
     mLogPanel.append("accessory controller constructed\n");
@@ -76,6 +73,7 @@ public class AccessoryController extends Controller implements Runnable {
         mLogPanel.setText("");
       }
     });
+    handleCreate(activity);
   }
 	
   public void showScore(int score) {
@@ -85,15 +83,18 @@ public class AccessoryController extends Controller implements Runnable {
     return mControllerView; 
   }
 
-	public void handleCreate(Activity activity) {
+  private void registerDettachFilter(Activity activity) {
+    IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+    filter.addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
+    activity.registerReceiver(mUsbReceiver, filter);
+  }
+  
+	protected void handleCreate(Activity activity) {
 
 		mUsbManager = UsbManager.getInstance(activity);
-		mPermissionIntent = PendingIntent.getBroadcast(activity, 0, new Intent(
-				ACTION_USB_PERMISSION), 0);
-		IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-		filter.addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
-		activity.registerReceiver(mUsbReceiver, filter);
-
+		
+		registerDettachFilter(activity);
+		
 		if (activity.getLastNonConfigurationInstance() != null) {
 			mAccessory = (UsbAccessory) activity.getLastNonConfigurationInstance();
 			openAccessory(mAccessory);
@@ -104,6 +105,7 @@ public class AccessoryController extends Controller implements Runnable {
 	}
 
 	
+  @Override
 	public Object handleRetainNonConfigurationInstance(Activity activity) {
 		if (mAccessory != null) {
 			return mAccessory;
@@ -111,6 +113,11 @@ public class AccessoryController extends Controller implements Runnable {
 		return null;
 	}
 
+  public static boolean hasAccessoryAttached(Activity activity) {
+    return UsbManager.getInstance(activity).getAccessoryList()!=null;
+  }
+
+  @Override
 	public void handleResume(Activity activity) {
 
 		if (mInputStream != null && mOutputStream != null) {
@@ -125,8 +132,9 @@ public class AccessoryController extends Controller implements Runnable {
 			} else {
 				synchronized (mUsbReceiver) {
 					if (!mPermissionRequestPending) {
-						mUsbManager.requestPermission(accessory,
-								mPermissionIntent);
+					  PendingIntent mPermissionIntent = PendingIntent.getBroadcast(
+					      activity, 0, new Intent(ACTION_USB_PERMISSION), 0);
+						mUsbManager.requestPermission(accessory, mPermissionIntent);
 						mPermissionRequestPending = true;
 					}
 				}
@@ -137,11 +145,13 @@ public class AccessoryController extends Controller implements Runnable {
     mLogPanel.append("resumed... mAccessory "+(mAccessory==null?"null":"NOT null")+"\n");
 	}
 
+  @Override
 	public void handlePause() {
     mLogPanel.append("paused... mAccessory "+(mAccessory==null?"null":"NOT null")+"\n");
 		closeAccessory();
 	}
 
+  @Override
 	public void handleDestroy(Activity activity) {
     mLogPanel.append("destroyed... mAccessory "+(mAccessory==null?"null":"NOT null")+"\n");
 	  activity.unregisterReceiver(mUsbReceiver);
@@ -167,24 +177,6 @@ public class AccessoryController extends Controller implements Runnable {
 
     public byte getState() {
       return state;
-    }
-  }
-
-  protected class JoyMsg {
-    private int x;
-    private int y;
-
-    public JoyMsg(int x, int y) {
-      this.x = x;
-      this.y = y;
-    }
-
-    public int getX() {
-      return x;
-    }
-
-    public int getY() {
-      return y;
     }
   }
 
@@ -308,7 +300,7 @@ public class AccessoryController extends Controller implements Runnable {
 		@Override
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
-			case MESSAGE_SWITCH:
+			case 1:  // the only message type currently supported
 				SwitchMsg o = (SwitchMsg) msg.obj;
 				handleSwitchMessage(o);
 				break;
