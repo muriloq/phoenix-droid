@@ -100,8 +100,8 @@ public class Sound implements Runnable {
     private int nLowpass_polybit;
 
     private int sampleRate = 50000;
-    private int playback_freq = 22050;
-    private int buffer_size = 20000;
+    private int playback_freq = 44100;
+    private int buffer_size = 50000;
     private short[] buffer;
 
     private int music_buffer_size = 20000;
@@ -289,7 +289,7 @@ public class Sound implements Runnable {
         return 24000 * 1 / 3 + 24000 * 2 / 3 * voltage / 32768;
     }
 
-    public final int tone1(int samplerate) {
+    public final short tone1(int samplerate) {
         int vco1 = tone1_vco1(samplerate);
         int vco2 = tone1_vco2(samplerate);
         int frequency = tone1_vco(samplerate, vco1, vco2);
@@ -305,7 +305,8 @@ public class Sound implements Runnable {
             }
         }
 
-        return (t1Output != 0) ? tone1_level : -tone1_level;
+        int t = (t1Output != 0) ? tone1_level : -tone1_level;
+		return (short) ( t > 32767 ? 32767 : (t < -32768 ? -32768 : t) );
     }
 
     public final int tone2_vco(int samplerate) {
@@ -326,7 +327,7 @@ public class Sound implements Runnable {
                     t2vLevel = (int) C7_MIN;
             }
         }
-        return 10212 * t2vLevel / 32768;
+        return (10212 * t2vLevel / 32768);
     }
 
     public final int tone2(int samplerate) {
@@ -342,7 +343,8 @@ public class Sound implements Runnable {
                 }
             }
         }
-        return (t2Output != 0) ? tone2_level : -tone2_level;
+        int t = (t2Output != 0) ? tone2_level : -tone2_level;
+        return (short) ( t > 32767 ? 32767 : (t < -32768 ? -32768 : t) );
     }
 
     public final int update_c24(int samplerate) {
@@ -395,7 +397,7 @@ public class Sound implements Runnable {
         return c25Level;
     }
 
-    public final int noise(int samplerate) {
+    public final short noise(int samplerate) {
         int vc24 = update_c24(samplerate);
         int vc25 = update_c25(samplerate);
         int sum = 0, level, frequency;
@@ -424,16 +426,16 @@ public class Sound implements Runnable {
         }
         if (nLowpass_polybit == 0)
             sum += vc25;
-
-        return sum;
+        
+        int t = sum;
+        return (short) ( t > 32767 ? 32767 : (t < -32768 ? -32768 : t) );
     }
 
     public void process(short[] buffer, int length) {
         int bufferIndex = 0;
         while (length-- > 0) {
-            int sum = 0;
-            sum = (tone1(sampleRate) + tone2(sampleRate) + noise(sampleRate)) / 4;
-            buffer[bufferIndex++] = (byte) (sum < 32768 ? sum > -32768 ? sum : -32768 : 32767);
+            int t = ((tone1(sampleRate) + tone2(sampleRate) + noise(sampleRate)) / 4);
+            buffer[bufferIndex++] = (short) ( t > 32767 ? 32767 : (t < -32768 ? -32768 : t) );
         }
     }
 
@@ -488,6 +490,7 @@ public class Sound implements Runnable {
 
     public void stop() {
         running = false;
+        music.stop();
     }
 
 }
