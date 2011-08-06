@@ -100,9 +100,9 @@ public class Sound implements Runnable {
     private int nLowpass_polybit;
 
     private int sampleRate = 50000;
-    private int playback_freq = 22050;
-    private int buffer_size = 20000;
-    private short[] buffer;
+    private int playback_freq = 44100;
+    private int buffer_size = 40000;
+    private byte[] buffer;
 
     private int music_buffer_size = 20000;
     private byte[] music_buffer;
@@ -114,7 +114,7 @@ public class Sound implements Runnable {
     private Thread thread;
     private boolean running = true;
     private TMS36XX music;
-	private AudioTrack audiotrack;
+	//private AudioTrack audiotrack;
 
     public Sound() {
         int shiftreg = 0;
@@ -134,7 +134,7 @@ public class Sound implements Runnable {
 
         // channel = stream_init("Custom", 50, Machine->sampleRate, 0, phoenix_sound_update); if ( channel == -1 ) return 1;
 
-        this.buffer = new short[buffer_size];
+        this.buffer = new byte[buffer_size];
         this.music_buffer = new byte[music_buffer_size];
 
 //      Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
@@ -164,14 +164,14 @@ public class Sound implements Runnable {
 //  }
 
         // Android
-		audiotrack = new AudioTrack(AudioManager.STREAM_MUSIC, playback_freq,
-				AudioFormat.CHANNEL_CONFIGURATION_MONO,
-				AudioFormat.ENCODING_PCM_16BIT, buffer_size,
-				AudioTrack.MODE_STREAM);
-		audiotrack.write(buffer, 0, buffer_size);
-		thread = new Thread(this, "TIA");
-		thread.start();
-		audiotrack.play();
+//		audiotrack = new AudioTrack(AudioManager.STREAM_MUSIC, playback_freq,
+//				AudioFormat.CHANNEL_CONFIGURATION_MONO,
+//				AudioFormat.ENCODING_PCM_16BIT, buffer_size,
+//				AudioTrack.MODE_STREAM);
+//		audiotrack.write(buffer, 0, buffer_size);
+//		thread = new Thread(this, "TIA");
+//		thread.start();
+//		audiotrack.play();
 
 		AudioTrack musictrack = new AudioTrack(AudioManager.STREAM_MUSIC,
 				playback_freq, AudioFormat.CHANNEL_CONFIGURATION_MONO,
@@ -428,12 +428,14 @@ public class Sound implements Runnable {
         return sum;
     }
 
-    public void process(short[] buffer, int length) {
+    public void process(byte[] buffer, int length) {
         int bufferIndex = 0;
         while (length-- > 0) {
             int sum = 0;
             sum = (tone1(sampleRate) + tone2(sampleRate) + noise(sampleRate)) / 4;
-            buffer[bufferIndex++] = (byte) (sum < 32768 ? sum > -32768 ? sum : -32768 : 32767);
+//            int t = sum < 32768 ? sum > -32768 ? sum : -32768 : 32767;
+            int t = sum < 128? sum > -128 ? sum : -128 : 127;
+			buffer[bufferIndex++] = (byte) t ;
         }
     }
 
@@ -473,21 +475,22 @@ public class Sound implements Runnable {
     }
 
     public void run() {
-        while (running) {
-            process(buffer, buffer_size);
-//            line.write(buffer, 0, buffer_size);
-            audiotrack.write(buffer, 0, buffer_size);
-        }
-        audiotrack.flush();
-        audiotrack.stop();
-//        line.drain();
-//        line.stop();
-//        line.close();
-//        line = null;
+//        while (running) {
+//            process(buffer, buffer_size);
+////            line.write(buffer, 0, buffer_size);
+//            audiotrack.write(buffer, 0, buffer_size);
+//        }
+//        audiotrack.flush();
+//        audiotrack.stop();
+////        line.drain();
+////        line.stop();
+////        line.close();
+////        line = null;
     }
 
     public void stop() {
         running = false;
+        music.stop(); 
     }
 
 }

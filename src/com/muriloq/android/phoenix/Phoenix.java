@@ -122,12 +122,12 @@ public class Phoenix extends i8080 {
 
   private int characters[][]; // decoded characters, for each palette
 
-  //    private SoundController soundController = null; 
-  //    private Sound laserSFX = null;
-  //    private Sound explosionSFX = null;
-  //    private Sound blowSFX = null;
-  //    private Sound shieldSFX = null;
-  //    private Sound hitSFX = null;
+//      private SoundController soundController = null; 
+//      private Sound laserSFX = null;
+//      private Sound explosionSFX = null;
+//      private Sound blowSFX = null;
+//      private Sound shieldSFX = null;
+//      private Sound hitSFX = null;
   private int savedHiScore=0;
 
   public static final int WIDTH_PIXELS = 208;
