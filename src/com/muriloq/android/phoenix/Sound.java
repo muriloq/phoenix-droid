@@ -99,10 +99,10 @@ public class Sound implements Runnable {
     private int nLowpass_counter;
     private int nLowpass_polybit;
 
-    private int sampleRate = 40000;
-    private int playback_freq = 40000;
+    private int sampleRate = 50000;
+    private int playback_freq = 22050;
     private int buffer_size = 20000;
-    private byte[] buffer;
+    private short[] buffer;
 
     private int music_buffer_size = 20000;
     private byte[] music_buffer;
@@ -132,33 +132,20 @@ public class Sound implements Runnable {
             poly18[i] = bits;
         }
 
-        /*
-         * channel = stream_init("Custom", 50, Machine->sampleRate, 0,
-         * phoenix_sound_update); if ( channel == -1 ) return 1;
-         */
+        // channel = stream_init("Custom", 50, Machine->sampleRate, 0, phoenix_sound_update); if ( channel == -1 ) return 1;
 
-//        Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
-//        for (int i = 0; i < mixerInfo.length; i++) {
-//            System.out.println(mixerInfo[i]);
-//        }
-//        this.mixer = AudioSystem.getMixer(mixerInfo[0]);
-//
-        this.buffer = new byte[buffer_size];
+        this.buffer = new short[buffer_size];
         this.music_buffer = new byte[music_buffer_size];
+
+//      Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
+//      for (int i = 0; i < mixerInfo.length; i++) {
+//          System.out.println(mixerInfo[i]);
+//      }
+//      this.mixer = AudioSystem.getMixer(mixerInfo[0]);
 //
 //        AudioFormat format = new AudioFormat(AudioFormat.Encoding.PCM_UNSIGNED, (float) playback_freq, 8, 1, 1, playback_freq, true);
-//
 //        DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
-        
 //        int minSize =AudioTrack.getMinBufferSize( 44100, AudioFormat.CHANNEL_CONFIGURATION_MONO, AudioFormat.ENCODING_PCM_8BIT );        
-        
-        audiotrack = new AudioTrack(AudioManager.STREAM_MUSIC,playback_freq,AudioFormat.CHANNEL_CONFIGURATION_MONO, AudioFormat.ENCODING_PCM_8BIT, 
-                buffer_size, AudioTrack.MODE_STREAM);
-        
-        audiotrack.write(buffer,0,buffer_size);
-        thread = new Thread(this, "TIA");
-        thread.start();
-        audiotrack.play();
 //        if (!AudioSystem.isLineSupported(info)) {
 //            System.out.println("DataLine not supported in this AudioSystem:" + info);
 //        }
@@ -172,18 +159,29 @@ public class Sound implements Runnable {
 //            musicLine.open(format, buffer_size);
 //            musicLine.start();
 //            music = new TMS36XX(musicLine, music_buffer);
-        
-        AudioTrack musictrack = new AudioTrack(AudioManager.STREAM_MUSIC,playback_freq,AudioFormat.CHANNEL_CONFIGURATION_MONO, AudioFormat.ENCODING_PCM_8BIT, 
-                music_buffer_size, AudioTrack.MODE_STREAM);
-        
-        musictrack.write(buffer,0,music_buffer_size);
-        music = new TMS36XX(audiotrack, music_buffer);
-        musictrack.play();
-//        } catch (LineUnavailableException e) {
-//            System.out.println("DataLine not available.");
-//        }
+//      } catch (LineUnavailableException e) {
+//      System.out.println("DataLine not available.");
+//  }
 
-    }
+        // Android
+		audiotrack = new AudioTrack(AudioManager.STREAM_MUSIC, playback_freq,
+				AudioFormat.CHANNEL_CONFIGURATION_MONO,
+				AudioFormat.ENCODING_PCM_16BIT, buffer_size,
+				AudioTrack.MODE_STREAM);
+		audiotrack.write(buffer, 0, buffer_size);
+		thread = new Thread(this, "TIA");
+		thread.start();
+		audiotrack.play();
+
+		AudioTrack musictrack = new AudioTrack(AudioManager.STREAM_MUSIC,
+				playback_freq, AudioFormat.CHANNEL_CONFIGURATION_MONO,
+				AudioFormat.ENCODING_PCM_8BIT, music_buffer_size,
+				AudioTrack.MODE_STREAM);
+		musictrack.write(music_buffer, 0, music_buffer_size);
+		music = new TMS36XX(musictrack, music_buffer);
+		musictrack.play();
+
+	}
 
     public final int tone1_vco1(int samplerate) {
         if (t1v1Output != 0) {
@@ -430,7 +428,7 @@ public class Sound implements Runnable {
         return sum;
     }
 
-    public void process(byte[] buffer, int length) {
+    public void process(short[] buffer, int length) {
         int bufferIndex = 0;
         while (length-- > 0) {
             int sum = 0;
