@@ -151,7 +151,7 @@ public class Phoenix extends i8080 {
   private int[] gameControl = new int []{1,1,1,1,1,1,1,1};
   private int interruptCounter = 0;
 
-  private boolean autoFrameSkip=false;
+  private boolean autoFrameSkip=true;
   private boolean realSpeed=true;
   private boolean mute=false;
   private int frameSkip = 1;
@@ -750,4 +750,8 @@ public class Phoenix extends i8080 {
     return mute;
   }
 
+  public void onStop() {
+	  this.sound.stop();
+  }
+  
 }

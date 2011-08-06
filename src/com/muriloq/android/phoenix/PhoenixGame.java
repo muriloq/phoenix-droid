@@ -205,6 +205,8 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
 
   public void onStop() {
     this.stop = true; 
+    this.destroy = true; 
+    this.phoenix.onStop();
   }
 
   public void onPause() {
@@ -221,7 +223,8 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
   }
 
   public void onDestroy(){
-    destroy = true;
+    //destroy = true;
+	  onStop();
   }
 
   
