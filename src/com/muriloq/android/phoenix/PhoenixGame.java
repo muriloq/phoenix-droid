@@ -39,8 +39,11 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
   // but emulator requires press+release events
   private ScheduledExecutorService scheduler;
 
+private Context context;
+
   public PhoenixGame(Context context) {
     super(context);
+    this.context = context; 
   }
   public PhoenixGame(Context context, AttributeSet attrs) {
     super(context, attrs);
@@ -53,7 +56,6 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
 
   private void initialize() {
     phoenix.loadRoms(loadRoms());
-    phoenix.initSFX();
     phoenix.hiload();
     phoenix.decodeChars(null);
   }
@@ -107,11 +109,13 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
   }
 
   public void fire() {
+	  
     this.thread = new Thread(new Runnable(){
 
 
       @Override
       public void run() {
+    	  
         while(!stop) {
           timeBefore = System.currentTimeMillis();
           boolean busy = false;

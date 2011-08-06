@@ -16,12 +16,14 @@ import com.muriloq.phoenix.i8080;
 //import com.allen_sauer.gwt.voices.client.Sound.LoadState;
 //import com.allen_sauer.gwt.voices.client.SoundController;
 //import com.google.gwt.event.dom.client.KeyCodes;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.media.MediaPlayer;
 import android.util.Log;
 import android.view.KeyEvent;
 
@@ -123,11 +125,11 @@ public class Phoenix extends i8080 {
   private int characters[][]; // decoded characters, for each palette
 
 //      private SoundController soundController = null; 
-//      private Sound laserSFX = null;
-//      private Sound explosionSFX = null;
-//      private Sound blowSFX = null;
-//      private Sound shieldSFX = null;
-//      private Sound hitSFX = null;
+      private MediaPlayer laserSFX = null;
+      private MediaPlayer explosionSFX = null;
+      private MediaPlayer blowSFX = null;
+      private MediaPlayer shieldSFX = null;
+      private MediaPlayer hitSFX = null;
   private int savedHiScore=0;
 
   public static final int WIDTH_PIXELS = 208;
@@ -236,6 +238,7 @@ public class Phoenix extends i8080 {
     //
     //        for ( int i=0;i<8;i++ ) gameControl[i]=1;
             sound = new Sound();
+            initSFX();
   }
 
 
@@ -283,10 +286,12 @@ public class Phoenix extends i8080 {
       if ( peekb(addr)!=newByte ) {
         mem[addr] = newByte;
         sound.updateControlA((byte)newByte);
+        
         if (!isMute()) {
-          //                    if ( newByte==143 ) explosionSFX.play ();
-          //                    if ( (newByte>101)&&(newByte<107) ) laserSFX.play ();
-          //                    if ( newByte==80 ) blowSFX.play ();
+        	if (laserSFX == null) initSFX();
+                              if ( newByte==143 ) explosionSFX.start();
+                              if ( (newByte>101)&&(newByte<107) ) laserSFX.start();
+                              if ( newByte==80 ) blowSFX.start();
         }
         // canvasGraphics.setFocus(true);
       }
@@ -297,8 +302,9 @@ public class Phoenix extends i8080 {
         mem[ addr ] = newByte;
         sound.updateControlB((byte) newByte);
         if (!isMute()){
-          //                    if ( newByte==12 ) shieldSFX.play ();
-          //                    if ( newByte==2 ) hitSFX.play ();
+        	if (laserSFX == null) initSFX();
+                              if ( newByte==12 ) shieldSFX.start();
+                              if ( newByte==2 ) hitSFX.start();
         }
         // canvasGraphics.setFocus(true);
       }
@@ -370,28 +376,38 @@ public class Phoenix extends i8080 {
 
   public void initSFX() {
     //        soundController = new SoundController();
-    //        this.laserSFX = loadSFX("laser"); 
-    //        this.explosionSFX = loadSFX("explo");
-    //        this.blowSFX = loadSFX("blow");
-    //        this.shieldSFX = loadSFX("shield");
-    //        this.hitSFX = loadSFX("hit");
+	  
+	  Context context = view.getContext(); 
+	this.laserSFX = MediaPlayer.create(context, R.raw.laser);
+	  this.explosionSFX = MediaPlayer.create(context, R.raw.explo);
+	  this.shieldSFX = MediaPlayer.create(context, R.raw.shield);
+	  this.hitSFX = MediaPlayer.create(context, R.raw.hit);
+	  this.blowSFX = MediaPlayer.create(context, R.raw.hit);
+	  
+//            this.laserSFX = loadSFX("laser");
+//              
+//            this.explosionSFX = loadSFX("explo");
+//            this.blowSFX = loadSFX("blow");
+//            this.shieldSFX = loadSFX("shield");
+//            this.hitSFX = loadSFX("hit");
   }
 
 
-  //    public Sound loadSFX(String name) {
-  //        Sound sfx = soundController.createSound(Sound.MIME_TYPE_AUDIO_OGG_VORBIS, name+".ogg");
-  //        sfx.play();
-  //        if (LoadState.LOAD_STATE_NOT_SUPPORTED == sfx.getLoadState()){
-  //            sfx = soundController.createSound(Sound.MIME_TYPE_AUDIO_MPEG_MP3, name+".mp3");
-  //            sfx.play();
-  //            if (LoadState.LOAD_STATE_NOT_SUPPORTED == sfx.getLoadState()){
-  //                sfx = soundController.createSound(Sound.MIME_TYPE_AUDIO_WAV_PCM, name+".wav");
-  //                sfx.play();
-  //            }
-  //        }
-  //        System.out.println("Loaded "+sfx.getMimeType()+", "+sfx.getSoundType()+", "+sfx.getLoadState());
-  //        return sfx;
-  //    }
+//      public MediaPlayer loadSFX(String name) {
+//    	  MediaPlayer
+////          Sound sfx = soundController.createSound(Sound.MIME_TYPE_AUDIO_OGG_VORBIS, name+".ogg");
+////          sfx.play();
+////          if (LoadState.LOAD_STATE_NOT_SUPPORTED == sfx.getLoadState()){
+////              sfx = soundController.createSound(Sound.MIME_TYPE_AUDIO_MPEG_MP3, name+".mp3");
+////              sfx.play();
+////              if (LoadState.LOAD_STATE_NOT_SUPPORTED == sfx.getLoadState()){
+////                  sfx = soundController.createSound(Sound.MIME_TYPE_AUDIO_WAV_PCM, name+".wav");
+////                  sfx.play();
+////              }
+////          }
+////          System.out.println("Loaded "+sfx.getMimeType()+", "+sfx.getSoundType()+", "+sfx.getLoadState());
+//          return sfx;
+//      }
 
   // The Hi Score is BCD (Binary Coded Decimal).
   // We convert this to integer here.
