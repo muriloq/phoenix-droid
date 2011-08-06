@@ -317,6 +317,8 @@ public class TMS36XX implements Runnable {
     }
 
     public void RESTART(int voice) {
+    	if (tunes[tune_num]==null)
+    		return;
         if ( (tunes[tune_num][tune_ofs*6+voice])!=0 ) {
             frequency[shift+voice] =        
             tunes[tune_num][tune_ofs*6+voice] *   
