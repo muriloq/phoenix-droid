@@ -93,7 +93,7 @@ public PhoenixGame(Context context) {
     controller.setInputListener(this);
     View controllerView=controller.createControllerWidget();
     if (controllerView!=null) this.addView(controllerView, this.getChildCount());
-
+    controller.setOnlistener(this);
     /*/ Enable view key events
     setFocusable(true);
     setFocusableInTouchMode(true);*/
@@ -172,10 +172,12 @@ public PhoenixGame(Context context) {
               }
 
               // Check if should wait
-              synchronized (this) {
-                while (pause) {
+              synchronized (thread) {
+                if (pause) {
                   try {
-                    wait();
+                	 Log.d(TAG, "Thread Pause");
+                	  thread.wait();
+                    Log.d(TAG, "Thread Play");
                   } catch (Exception e) {
                   }
                 }
@@ -211,27 +213,31 @@ public PhoenixGame(Context context) {
   }
 
   public void onStop() {
-    this.stop = true; 
-    this.destroy = true; 
+    this.stop = true;   
+   
     this.phoenix.onStop();
   }
 
   public void onPause() {
     synchronized(thread){
-      this.pause = true;
+      this.pause = true;      
     }
+    this.controller.onPause();
   }
 
   public void onRestart() {
     synchronized (thread) {
       this.pause = false;
+      this.stop = false; 
       thread.notify();
     }
+    this.controller.onRestart();
   }
 
   public void onDestroy(){
-    //destroy = true;
-	  onStop();
+	  this.destroy = true; 
+	 this.controller.onStop();
+	 onStop();
   }
 
   

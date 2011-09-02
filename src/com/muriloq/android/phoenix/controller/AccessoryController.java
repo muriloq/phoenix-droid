@@ -350,4 +350,10 @@ public class AccessoryController extends Controller implements Runnable {
     }
 	}
 
+	@Override
+	public void setOnlistener(View view) {
+		// FIXME Auto-generated method stub
+		
+	}
+
 }

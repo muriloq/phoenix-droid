@@ -31,7 +31,9 @@ public abstract class Controller {
   public abstract void showScore(byte player, byte[] bcdScore);
   public abstract View createControllerWidget();
 
-
+  //Set the touch listener in the actual screen.  
+  public abstract void setOnlistener(View view);
+  
   // put other interfaces, like to blinking android's eyes sometimes, 
   // or to light some rbg leds when the user wins
 
@@ -48,5 +50,20 @@ public abstract class Controller {
 
   public void handlePause() {
   }
+
+   public void onStop() {
+	// FIXME Auto-generated method stub
+	
+ }
+
+public void onPause() {
+	// FIXME Auto-generated method stub
+	
+}
+
+public void onRestart() {
+	// FIXME Auto-generated method stub
+	
+}	
    
 }

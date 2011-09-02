@@ -8,6 +8,8 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnKeyListener;
+import android.view.View.OnTouchListener;
+import android.widget.Button;
 
 import com.muriloq.android.phoenix.ButtonState;
 import com.muriloq.android.phoenix.ButtonType;
@@ -20,27 +22,32 @@ public class ScreenController extends Controller {
   private static final String TAG = "PHOENIX";
   
   private View mControllerView;
-  
-  public ScreenController(Context context) {
-    LayoutInflater factory = LayoutInflater.from(context);
-    
-    mControllerView=factory.inflate(R.layout.screen_controller, null);
-    mControllerView.setOnKeyListener(new KeyListener());
-    mControllerView.setOnTouchListener(new View.OnTouchListener() {
+  public boolean mPlay; //To stop AutoFire
+  private Button mBtFire; 
+  OnTouchListener onTouch = new View.OnTouchListener() {
       @Override
       public boolean onTouch(View v, MotionEvent event) {
         if (event.getAction()==MotionEvent.ACTION_DOWN ||
             event.getAction()==MotionEvent.ACTION_UP) {
           if (event.getX()<v.getWidth()/2) {
-            getInputListener().onJoystick(Direction.LEFT, event.getAction()==MotionEvent.ACTION_DOWN?ButtonState.PRESS:ButtonState.RELEASE);
+             getInputListener().onJoystick(Direction.LEFT, event.getAction()==MotionEvent.ACTION_DOWN?ButtonState.RELEASE:ButtonState.PRESS);
+          }else {       	  
+             getInputListener().onJoystick(Direction.RIGHT, event.getAction()==MotionEvent.ACTION_DOWN?ButtonState.RELEASE:ButtonState.PRESS);              
           }
           return true;
         }
         return false;
       }
-    });
+    };
     
-    mControllerView.findViewById(R.id.fire).setOnClickListener(new View.OnClickListener() {
+  public ScreenController(Context context) {
+    LayoutInflater factory = LayoutInflater.from(context);
+    mPlay=true;
+    mControllerView=factory.inflate(R.layout.screen_controller, null);
+    mControllerView.setOnKeyListener(new KeyListener());
+   // mControllerView.setOnTouchListener(
+    mBtFire =(Button) mControllerView.findViewById(R.id.fire);
+    mBtFire.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
         v.setEnabled(false);
@@ -64,6 +71,8 @@ public class ScreenController extends Controller {
   }
 
   private Handler mHandler=new Handler();
+
+
   
   class RestoreButtonState implements Runnable {
     private ButtonType type;
@@ -81,11 +90,13 @@ public class ScreenController extends Controller {
       getInputListener().onButton(ButtonType.FIRE, 
           pressed?ButtonState.RELEASE:ButtonState.PRESS);
       pressed=!pressed;
-      mHandler.postDelayed(this, pressed?50:200);
+      if(mPlay)
+    	  mHandler.postDelayed(this, pressed?50:200);
     }
   }
 
   protected void startAutofire() {
+	 mPlay=true;
     mHandler.post(new AutoFire());
   }
   
@@ -138,5 +149,29 @@ public class ScreenController extends Controller {
       return true;
     }
   }
+
+	@Override
+	public void setOnlistener(View view) {
+		view.setOnTouchListener(onTouch);
+	}
+	
+	@Override
+	public void onStop() {
+		onPause();
+	}
+	
+	@Override
+	public void onPause() {
+		mPlay=false;
+	}
+	
+	@Override
+	public void onRestart() {
+		if(!mBtFire.isEnabled()) {			
+			startAutofire();
+		}
+	}
+
+
  
 }
