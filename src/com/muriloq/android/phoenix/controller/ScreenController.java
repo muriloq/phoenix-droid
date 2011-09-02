@@ -103,7 +103,7 @@ public class ScreenController extends Controller {
     return mControllerView;
   }
   
-  public void showScore(int score) {
+  public void showScore(byte player, byte[] bcdScore) {
     // don't need to do anything here. score will be shown by the ROM itself
   }
 

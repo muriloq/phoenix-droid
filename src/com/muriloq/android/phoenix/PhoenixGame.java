@@ -41,7 +41,9 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
 
 private Context context;
 
-  public PhoenixGame(Context context) {
+private Controller controller;
+
+public PhoenixGame(Context context) {
     super(context);
     this.context = context; 
   }
@@ -87,6 +89,7 @@ private Context context;
   }
   
   public void setController(Controller controller) {
+	this.controller = controller; 
     controller.setInputListener(this);
     View controllerView=controller.createControllerWidget();
     if (controllerView!=null) this.addView(controllerView, this.getChildCount());
@@ -276,5 +279,9 @@ private Context context;
       phoenix.setGameControlFlags(control, state==ButtonState.PRESS);
     }
   }
-  
+
+  public Controller getController() {
+	return controller;
+  }
+
 }

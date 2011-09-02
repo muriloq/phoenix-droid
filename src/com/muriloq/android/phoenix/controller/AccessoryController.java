@@ -76,7 +76,8 @@ public class AccessoryController extends Controller implements Runnable {
     handleCreate(activity);
   }
 	
-  public void showScore(int score) {
+  public void showScore(byte player, byte[] bcdScore) {
+	  sendCommand(player, (byte) 0, bcdScore);
   }
   
   public View createControllerWidget() {
@@ -256,9 +257,9 @@ public class AccessoryController extends Controller implements Runnable {
   private final byte BUTTON_SHIELD=1;
   private final byte BUTTON_DOWN=2;
   private final byte BUTTON_LEFT=3;
-	private final byte BUTTON_UP=4;
+  private final byte BUTTON_UP=4;
   private final byte BUTTON_RIGHT=5;
-
+ 
   public void run() {
 		int ret = 0;
 		byte[] buffer = new byte[16384];
@@ -308,14 +309,15 @@ public class AccessoryController extends Controller implements Runnable {
 		}
 	};
 
-	public void sendCommand(byte command, byte target, int value) {
-		byte[] buffer = new byte[3];
-		if (value > 255)
-			value = 255;
-
+	public void sendCommand(byte command, byte target, byte[] value) {
+		byte[] buffer = new byte[2+value.length];
+		
 		buffer[0] = command;
 		buffer[1] = target;
-		buffer[2] = (byte) value;
+		for (int i=0; i < value.length; i++){
+			buffer[2+i] = value[i];
+		}
+		
 		if (mOutputStream != null && buffer[1] != -1) {
 			try {
 				mOutputStream.write(buffer);

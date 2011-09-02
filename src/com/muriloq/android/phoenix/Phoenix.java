@@ -4,18 +4,6 @@ package com.muriloq.android.phoenix;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import com.muriloq.phoenix.i8080;
-
-//import gwt.g2d.client.graphics.Color;
-//import gwt.g2d.client.graphics.KnownColor;
-//import gwt.g2d.client.graphics.Surface;
-//import gwt.g2d.client.graphics.canvas.CanvasElement;
-//import gwt.g2d.client.graphics.canvas.ImageDataAdapter;
-//
-//import com.allen_sauer.gwt.voices.client.Sound;
-//import com.allen_sauer.gwt.voices.client.Sound.LoadState;
-//import com.allen_sauer.gwt.voices.client.SoundController;
-//import com.google.gwt.event.dom.client.KeyCodes;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
@@ -26,6 +14,9 @@ import android.graphics.Rect;
 import android.media.MediaPlayer;
 import android.util.Log;
 import android.view.KeyEvent;
+
+import com.muriloq.android.phoenix.controller.Controller;
+import com.muriloq.phoenix.i8080;
 
 
 /*
@@ -317,7 +308,35 @@ public class Phoenix extends i8080 {
         int hiScore = getScore(0x4388);
         if ( hiScore > savedHiScore ) hisave();
         if ( hiScore < savedHiScore ) hiload();
+    	this.view.getController().showScore(Controller.PLAYER_ONE,new byte[]{
+        		(byte) peekb(0x4388),
+        		(byte) peekb(0x4389),
+        		(byte) peekb(0x438a),
+        		(byte) peekb(0x438b)}
+       	);
       }
+    }
+
+    if ( addr >= 0x4380 && addr <= 0x4383 ){
+    	int score = getScore(0x4380); 
+    	System.out.println("1P Score:"+score);
+    	this.view.getController().showScore(Controller.PLAYER_ONE,new byte[]{
+    		(byte) peekb(0x4380),
+    		(byte) peekb(0x4381),
+    		(byte) peekb(0x4382),
+    		(byte) peekb(0x4383)}
+    	);
+    }
+
+    if ( addr >= 0x4384 && addr <= 0x4387 ){
+    	int score = getScore(0x4384); 
+    	System.out.println("2P Score:"+score);
+    	this.view.getController().showScore(Controller.PLAYER_TWO,new byte[]{
+      	  (byte) peekb(0x4384),
+       	  (byte) peekb(0x4385),
+       	  (byte) peekb(0x4386),
+       	  (byte) peekb(0x4387)}
+       	);
     }
 
     if ( addr >= 0x4000 ) {   // 0x0000 - 0x3fff Program ROM 

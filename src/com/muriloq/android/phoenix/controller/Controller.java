@@ -8,7 +8,10 @@ import com.muriloq.android.phoenix.ButtonType;
 import com.muriloq.android.phoenix.Direction;
 
 public abstract class Controller {
-  
+  public static final byte HI_SCORE = 0;
+  public static final byte PLAYER_ONE = 1;
+  public static final byte PLAYER_TWO = 2;
+	  
   public interface InputListener {
     public void onButton(ButtonType button, ButtonState state);
     public void onJoystick(Direction direction, ButtonState state);
@@ -25,7 +28,7 @@ public abstract class Controller {
     return inputListener;
   }
   
-  public abstract void showScore(int score);
+  public abstract void showScore(byte player, byte[] bcdScore);
   public abstract View createControllerWidget();
 
 
