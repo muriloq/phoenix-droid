@@ -308,7 +308,7 @@ public class Phoenix extends i8080 {
         int hiScore = getScore(0x4388);
         if ( hiScore > savedHiScore ) hisave();
         if ( hiScore < savedHiScore ) hiload();
-    	this.view.getController().showScore(Controller.PLAYER_ONE,new byte[]{
+    	this.view.getController().showScore(Controller.HI_SCORE,new byte[]{
         		(byte) peekb(0x4388),
         		(byte) peekb(0x4389),
         		(byte) peekb(0x438a),
