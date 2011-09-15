@@ -1,12 +1,11 @@
 package com.muriloq.android.phoenix;
 
-import java.lang.reflect.Method;
-
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 
+import com.muriloq.android.phoenix.controller.AccessoryController;
 import com.muriloq.android.phoenix.controller.Controller;
 import com.muriloq.android.phoenix.controller.ScreenController;
 
@@ -29,16 +28,25 @@ public class PhoenixActivity extends Activity {
     if (mAccessoryLibPresent==null) {
       try {
         Class.forName("com.android.future.usb.UsbAccessory");
+        Log.i(TAG, "FOUND com.android.future.usb.UsbAccessory");
+        mAccessoryLibPresent=true;
       } catch (Exception e) {
-        mAccessoryLibPresent=false;
+	      try {
+	          Class.forName("android.hardware.usb.UsbAccessory");
+	          Log.i(TAG, "FOUND android.hardware.usb.UsbAccessory");
+	          mAccessoryLibPresent=true;
+	        } catch (Exception e2) {
+		      Log.i(TAG, "no UsbAccessory lib found");
+	          mAccessoryLibPresent=false;
+	        }
       }
-      mAccessoryLibPresent=true;
     }
     return mAccessoryLibPresent;
   }
   
   private Controller getAttachedAccessory() {
     try {
+      /*
       @SuppressWarnings("unchecked")
       Class<Controller> clazz=(Class<Controller>) Class.forName("com.muriloq.android.phoenix.controller.AccessoryControler");
       Method m=clazz.getMethod("hasAccessoryAttached", Activity.class);
@@ -46,9 +54,17 @@ public class PhoenixActivity extends Activity {
       if (hasAccessoryAttached) {
         Log.i(TAG, "Creating AccessoryController");
         return clazz.getConstructor(Activity.class).newInstance(this);
+      }*/
+      if (AccessoryController.hasAccessoryAttached(this)) {
+        return new AccessoryController(this);
       }
-    } catch (Exception e) {
-      Log.w("could not create Accessory Controller!", e);
+    } catch (Throwable e) {
+    	// debug:
+      while (e.getCause()!=null) {
+        e=e.getCause();
+        Log.w(TAG, e);
+      }
+      Log.w(TAG, e);
     }
     return null;
   }
@@ -85,20 +101,15 @@ public class PhoenixActivity extends Activity {
     setContentView(mView);
 
     setController(createController());
-
-
-    mView.fire(); 
+    
+    mController.setReadyListener(new Controller.ReadyListener() {
+      public void controlerReady() {
+        Log.d(TAG, "controller READY, starting game engine!");
+        mView.fire(); 
+      }
+    });
   }
 
-
-  @Override
-  protected void onStop() {
-    super.onStop();
-    mView.onStop();
-    // onstop should not destroy mController instance, because if the stop is
-    // caused by configuration change, a new instance will be called with
-    // the controller instance, which should improve load time
-  }
 
   @Override
   protected void onPause() {
@@ -108,24 +119,26 @@ public class PhoenixActivity extends Activity {
   }
 
   @Override
-  protected void onRestart() {
-    super.onRestart();
+  protected void onResume() {
+    super.onResume();
+    mController.handleResume();
     mView.onRestart();
-    mController.handleResume(this);
-
   }
-
+  
   @Override
   protected void onDestroy(){
     super.onDestroy(); 
-    mView.onDestroy();
-    mController.handleDestroy(this);
+    mController.handleDestroy();
     //     android.os.Debug.stopMethodTracing();
 
   }
 
   @Override
   public Object onRetainNonConfigurationInstance() {
-    return super.onRetainNonConfigurationInstance();
+    if (mController!=null) {
+      return mController.getObjectToRetain();
+    }
+    return null;
   }
+
 }

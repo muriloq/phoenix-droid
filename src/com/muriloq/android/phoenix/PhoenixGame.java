@@ -22,7 +22,7 @@ import com.muriloq.android.phoenix.controller.Controller;
 public class PhoenixGame extends LinearLayout implements Controller.InputListener {
 
   private static final String TAG="PHOENIX";
-  
+
   private Phoenix phoenix;
 
   private boolean stop = false;
@@ -31,24 +31,24 @@ public class PhoenixGame extends LinearLayout implements Controller.InputListene
   private long sleepTime;
   private long timeNow;
   private long timeBefore;
-//  private long interruptCounter;
+  //  private long interruptCounter;
 
+  private int highscore=0;
+  
   private Thread thread;
 
   // used to handle button release, because buttons only have a click event,
   // but emulator requires press+release events
   private ScheduledExecutorService scheduler;
 
-private Context context;
+  private Controller controller;
 
-private Controller controller;
-
-public PhoenixGame(Context context) {
+  public PhoenixGame(Context context) {
     super(context);
-    this.context = context; 
   }
   public PhoenixGame(Context context, AttributeSet attrs) {
     super(context, attrs);
+    setKeepScreenOn(true);
     this.phoenix = new Phoenix(this);
     scheduler=Executors.newScheduledThreadPool(10);
     Display display = ((Activity) context).getWindowManager().getDefaultDisplay(); 
@@ -75,7 +75,7 @@ public PhoenixGame(Context context) {
 
   private void loadRom(String name, byte[] buffer, int offset, int len) throws IOException {
     int readbytes = 0;
-    System.out.print("Reading ROM "+name+"...");
+    Log.d(TAG, "Reading ROM "+name+"...");
     InputStream is = getContext().getAssets().open(name);
     BufferedInputStream bis = new BufferedInputStream(is, len);
     int n = len;
@@ -85,18 +85,14 @@ public PhoenixGame(Context context) {
       toRead -= nRead;
       readbytes += nRead;
     }
-    System.out.println(readbytes + " bytes");
+    Log.d(TAG, readbytes + " bytes");
   }
-  
+
   public void setController(Controller controller) {
-	this.controller = controller; 
+    this.controller = controller; 
     controller.setInputListener(this);
     View controllerView=controller.createControllerWidget();
     if (controllerView!=null) this.addView(controllerView, this.getChildCount());
-    controller.setOnlistener(this);
-    /*/ Enable view key events
-    setFocusable(true);
-    setFocusableInTouchMode(true);*/
   }
 
   @Override
@@ -125,7 +121,7 @@ public PhoenixGame(Context context) {
           while (!destroy) {
             phoenix.cycles++;
             int pc = phoenix.PC();
-
+  
             // After rendering a frame, the program enters in a
             // busy wait
             // that we don't need emulate. Skipping it increases
@@ -147,16 +143,16 @@ public PhoenixGame(Context context) {
             else if (busy && (pc == 128)) {
               phoenix.cycles = 0;
             }
-
+  
             if (phoenix.cycles == 0) {
               phoenix.interrupt();
-//              interruptCounter++;
+              //              interruptCounter++;
               timeNow = System.currentTimeMillis();
               int msPerFrame = (int) (timeNow - timeBefore);
               sleepTime = 1000 / 60 - msPerFrame;
-
+  
               phoenix.cycles = -phoenix.cyclesPerInterrupt;
-
+  
               if (phoenix.isAutoFrameSkip()) {
                 if (phoenix.getFramesPerSecond() > 60) {
                   int frameSkip = phoenix.getFrameSkip();
@@ -166,7 +162,7 @@ public PhoenixGame(Context context) {
                   phoenix.setFrameSkip(frameSkip < 5 ? frameSkip + 1 : 5);
                 }
               }
-
+  
               if (!phoenix.isRealSpeed() || (sleepTime < 0)) {
                 sleepTime = 1;
               }
@@ -205,7 +201,6 @@ public PhoenixGame(Context context) {
     return phoenix;
   }
 
-
   @Override
   protected void onDraw(Canvas canvas) {
     super.dispatchDraw(canvas);
@@ -219,28 +214,24 @@ public PhoenixGame(Context context) {
   }
 
   public void onPause() {
-    synchronized(thread){
+    if (thread!=null) synchronized(thread){
       this.pause = true;      
     }
-    this.controller.onPause();
   }
 
   public void onRestart() {
-    synchronized (thread) {
+    if (thread!=null) synchronized (thread) {
       this.pause = false;
       this.stop = false; 
       thread.notify();
     }
-    this.controller.onRestart();
   }
 
   public void onDestroy(){
 	  this.destroy = true; 
-	 this.controller.onStop();
 	 onStop();
   }
 
-  
   protected int convertButtonToControlPos(ButtonType button) {
     switch (button) {
     case SHIELD: return Phoenix.CONTROL_DOWN; 
@@ -265,6 +256,7 @@ public PhoenixGame(Context context) {
     Log.d(TAG, "button="+button+" state="+state);
     phoenix.setGameControlFlags(convertButtonToControlPos(button), state==ButtonState.RELEASE);
   }
+  
   @Override
   public void onCoinInserted() {
     Log.d(TAG, "coin inserted");
@@ -277,6 +269,7 @@ public PhoenixGame(Context context) {
       }
     }, 1, TimeUnit.SECONDS);
   }
+  
   @Override
   public void onJoystick(Direction direction, ButtonState state) {
     Log.d(TAG, "joystick "+direction+" state="+state);
@@ -286,8 +279,14 @@ public PhoenixGame(Context context) {
     }
   }
 
-  public Controller getController() {
-	return controller;
+  public void showScore(byte player, int score, byte[] bcdScore) {
+    Log.d(TAG, player+"P Score:"+score);
+    controller.showScore(player, bcdScore);
+    if (score>highscore) {
+      highscore=score;
+      Log.d(TAG, "High Score:"+highscore);
+      controller.showScore(Controller.HI_SCORE, bcdScore);
+    }
   }
-
+  
 }

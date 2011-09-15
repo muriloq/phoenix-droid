@@ -13,7 +13,7 @@
     	android:label="@string/app_name" android:debuggable="true" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
      	 
         <activity android:label="@string/app_name" android:name="PhoenixActivity" 
-              android:screenOrientation="portrait">
+              android:screenOrientation="portrait" android:taskAffinity="" android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -29,6 +29,7 @@
         </activity>
 
         <uses-library android:name="com.android.future.usb.accessory" android:required="false"></uses-library>
+        <uses-library android:name="android.hardware.usb.accessory" android:required="false"></uses-library>
 
     </application>
 	<uses-sdk android:minSdkVersion="7" />

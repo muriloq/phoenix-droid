@@ -1,6 +1,5 @@
 package com.muriloq.android.phoenix.controller;
 
-import android.app.Activity;
 import android.view.View;
 
 import com.muriloq.android.phoenix.ButtonState;
@@ -17,53 +16,61 @@ public abstract class Controller {
     public void onJoystick(Direction direction, ButtonState state);
     public void onCoinInserted();
   }
+
+  public interface ReadyListener {
+    public void controlerReady();
+  }
   
-  protected InputListener inputListener;
+  protected InputListener mInputListener;
+  protected ReadyListener mReadyListener;
+  protected boolean mRequiresListenerNotification;
+  
+  public ReadyListener getReadyListener() {
+    return mReadyListener;
+  }
+
+  public void setReadyListener(ReadyListener readyListener) {
+    mReadyListener=readyListener;
+    if (mRequiresListenerNotification) {
+      mReadyListener.controlerReady();
+      mRequiresListenerNotification=false;
+    }
+  }
+  
+  protected void setReady() {
+    if (mReadyListener!=null) {
+      mReadyListener.controlerReady();
+    }
+    mRequiresListenerNotification=true;
+  }
   
   public void setInputListener(InputListener inputListener) {
-    this.inputListener=inputListener;
+    this.mInputListener=inputListener;
   }
   
   public InputListener getInputListener() {
-    return inputListener;
+    return mInputListener;
   }
   
   public abstract void showScore(byte player, byte[] bcdScore);
   public abstract View createControllerWidget();
 
-  //Set the touch listener in the actual screen.  
-  public abstract void setOnlistener(View view);
-  
   // put other interfaces, like to blinking android's eyes sometimes, 
   // or to light some rbg leds when the user wins
 
   
-  public Object handleRetainNonConfigurationInstance(Activity activity) {
+  public Object getObjectToRetain() {
     return null;
   }
 
-  public void handleDestroy(Activity activity) {
+  public void handleDestroy() {
   }
 
-  public void handleResume(Activity activity) {
+  public void handleResume() {
   }
 
   public void handlePause() {
   }
 
-   public void onStop() {
-	// FIXME Auto-generated method stub
-	
- }
-
-public void onPause() {
-	// FIXME Auto-generated method stub
-	
-}
-
-public void onRestart() {
-	// FIXME Auto-generated method stub
-	
-}	
-   
+  
 }

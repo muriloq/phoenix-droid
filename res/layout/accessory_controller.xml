@@ -1,5 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout android:id="@+id/layout_accessory" android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent" xmlns:android="http://schemas.android.com/apk/res/android">
-  <Button android:text="clear messages" android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/clear"></Button>
-  <TextView android:id="@+id/log" android:layout_width="fill_parent" android:layout_height="fill_parent"></TextView>
 </LinearLayout>

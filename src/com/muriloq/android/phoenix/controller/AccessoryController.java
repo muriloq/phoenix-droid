@@ -20,6 +20,8 @@ import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.ref.SoftReference;
+import java.util.BitSet;
 
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -27,29 +29,23 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.usb.UsbAccessory;
+import android.hardware.usb.UsbManager;
 import android.os.Handler;
 import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
 
-import com.android.future.usb.UsbAccessory;
-import com.android.future.usb.UsbManager;
 import com.muriloq.android.phoenix.ButtonState;
 import com.muriloq.android.phoenix.ButtonType;
 import com.muriloq.android.phoenix.Direction;
-import com.muriloq.android.phoenix.R;
 
-public class AccessoryController extends Controller implements Runnable {
+public class AccessoryController extends Controller {
 	private static final String TAG = "PHOENIX";
 
-	private static final String ACTION_USB_PERMISSION = "com.google.android.DemoKit.action.USB_PERMISSION";
+	private static final String ACTION_USB_PERMISSION = "phoenixdroid.action.USB_PERMISSION";
 
-	private Handler mUiHandler;
-	
 	private UsbManager mUsbManager;
 	private boolean mPermissionRequestPending;
 
@@ -58,22 +54,12 @@ public class AccessoryController extends Controller implements Runnable {
 	FileInputStream mInputStream;
 	FileOutputStream mOutputStream;
 
-	private TextView mLogPanel;
-	private View mControllerView;
-	
+	private SoftReference<Activity> mActivity;
+	private Thread readThread;
+
 	public AccessoryController(Activity activity) {
-	  mUiHandler=new Handler();
-    LayoutInflater factory = LayoutInflater.from(activity);
-    mControllerView=factory.inflate(R.layout.accessory_controller, null);
-    mLogPanel=(TextView) mControllerView.findViewById(R.id.log);
-    mLogPanel.append("accessory controller constructed\n");
-    Button clear=(Button) mControllerView.findViewById(R.id.clear);
-    clear.setOnClickListener(new View.OnClickListener() {
-      public void onClick(View v) {
-        mLogPanel.setText("");
-      }
-    });
-    handleCreate(activity);
+	  mActivity=new SoftReference<Activity>(activity);
+    handleCreate();
   }
 	
   public void showScore(byte player, byte[] bcdScore) {
@@ -81,88 +67,57 @@ public class AccessoryController extends Controller implements Runnable {
   }
   
   public View createControllerWidget() {
-    return mControllerView; 
+    return null; 
   }
 
-  private void registerDettachFilter(Activity activity) {
+  private void registerDettachFilter() {
     IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
     filter.addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
-    activity.registerReceiver(mUsbReceiver, filter);
+    mActivity.get().registerReceiver(mUsbReceiver, filter);
   }
   
-	protected void handleCreate(Activity activity) {
+	protected void handleCreate() {
+		mUsbManager = (UsbManager) mActivity.get().getSystemService(Context.USB_SERVICE);//UsbManager.getInstance(activity);
 
-		mUsbManager = UsbManager.getInstance(activity);
-		
-		registerDettachFilter(activity);
-		
-		if (activity.getLastNonConfigurationInstance() != null) {
-			mAccessory = (UsbAccessory) activity.getLastNonConfigurationInstance();
-			openAccessory(mAccessory);
-		}
-
-		enableControls(false);
-    mLogPanel.append("accessory controller created... mAccessory "+(mAccessory==null?"null":"NOT null")+"\n");
+		registerDettachFilter();
+    if (mActivity.get().getLastNonConfigurationInstance() != null) {
+      UsbAccessory accessory = (UsbAccessory) mActivity.get().getLastNonConfigurationInstance();
+      openAccessory(accessory);
+    }
+    Log.d(TAG, "accessory controller on handleCreate... mAccessory "+(mAccessory==null?"null":"NOT null")+"\n");
 	}
 
 	
-  @Override
-	public Object handleRetainNonConfigurationInstance(Activity activity) {
-		if (mAccessory != null) {
-			return mAccessory;
-		}
-		return null;
-	}
-
   public static boolean hasAccessoryAttached(Activity activity) {
-    return UsbManager.getInstance(activity).getAccessoryList()!=null;
+  	UsbAccessory[] accessories=((UsbManager) activity.getSystemService(Context.USB_SERVICE)).getAccessoryList();
+    Log.i(TAG, "looking for conected accessories: "+accessories);
+  	return accessories!=null;
   }
 
-  @Override
-	public void handleResume(Activity activity) {
-
-		if (mInputStream != null && mOutputStream != null) {
-			return;
-		}
-
-		UsbAccessory[] accessories = mUsbManager.getAccessoryList();
-		UsbAccessory accessory = (accessories == null ? null : accessories[0]);
-		if (accessory != null) {
-			if (mUsbManager.hasPermission(accessory)) {
-				openAccessory(accessory);
-			} else {
-				synchronized (mUsbReceiver) {
-					if (!mPermissionRequestPending) {
-					  PendingIntent mPermissionIntent = PendingIntent.getBroadcast(
-					      activity, 0, new Intent(ACTION_USB_PERMISSION), 0);
-						mUsbManager.requestPermission(accessory, mPermissionIntent);
-						mPermissionRequestPending = true;
-					}
-				}
-			}
-		} else {
-			Log.d(TAG, "mAccessory is null");
-		}
-    mLogPanel.append("resumed... mAccessory "+(mAccessory==null?"null":"NOT null")+"\n");
-	}
-
-  @Override
-	public void handlePause() {
-    mLogPanel.append("paused... mAccessory "+(mAccessory==null?"null":"NOT null")+"\n");
-		closeAccessory();
-	}
-
-  @Override
-	public void handleDestroy(Activity activity) {
-    mLogPanel.append("destroyed... mAccessory "+(mAccessory==null?"null":"NOT null")+"\n");
-	  activity.unregisterReceiver(mUsbReceiver);
-	}
-
-	
-	
-	
-	
-	
+  protected void requestPermission() {
+    if (mInputStream != null && mOutputStream != null) {
+      return;
+    }
+    UsbAccessory[] accessories = mUsbManager.getAccessoryList();
+    UsbAccessory accessory = (accessories == null ? null : accessories[0]);
+    if (accessory != null) {
+      if (mUsbManager.hasPermission(accessory)) {
+        openAccessory(accessory);
+      } else {
+        synchronized (mUsbReceiver) {
+          if (!mPermissionRequestPending) {
+            PendingIntent permissionIntent = PendingIntent.getBroadcast(
+                mActivity.get(), 0, new Intent(ACTION_USB_PERMISSION), 0);
+            mUsbManager.requestPermission(accessory, permissionIntent);
+            mPermissionRequestPending = true;
+          }
+        }
+      }
+    } else {
+      Log.d(TAG, "mAccessory is null");
+    }
+  }
+  
   protected class SwitchMsg {
     private byte button;
     private byte state;
@@ -187,28 +142,23 @@ public class AccessoryController extends Controller implements Runnable {
       String action = intent.getAction();
       if (ACTION_USB_PERMISSION.equals(action)) {
         synchronized (this) {
-          UsbAccessory accessory = UsbManager.getAccessory(intent);
-          if (intent.getBooleanExtra(
-              UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+          mPermissionRequestPending = false;
+          UsbAccessory accessory = getAccessoryFromPermissionRequestIntent(intent);
+          if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
             openAccessory(accessory);
           } else {
-            Log.d(TAG, "permission denied for accessory "
-                + accessory);
+            Log.d(TAG, "permission denied for accessory " + accessory);
           }
-          mPermissionRequestPending = false;
         }
       } else if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action)) {
-        UsbAccessory accessory = UsbManager.getAccessory(intent);
-        if (accessory != null && accessory.equals(mAccessory)) {
-          closeAccessory();
-        }
+        closeAccessory();
       }
     }
   };
 
-	
-	
-	
+  private UsbAccessory getAccessoryFromPermissionRequestIntent(Intent intent) {
+    return (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);//UsbManager.getAccessory(intent);
+  }
 	
 	private void openAccessory(UsbAccessory accessory) {
 		mFileDescriptor = mUsbManager.openAccessory(accessory);
@@ -217,24 +167,25 @@ public class AccessoryController extends Controller implements Runnable {
 			FileDescriptor fd = mFileDescriptor.getFileDescriptor();
 			mInputStream = new FileInputStream(fd);
 			mOutputStream = new FileOutputStream(fd);
-			Thread thread = new Thread(null, this, "DemoKit");
-			thread.start();
-	    mLogPanel.append("accessory opened\n");
-			Log.d(TAG, "accessory opened");
-			enableControls(true);
+			
+			readThread=new Thread(null, new Runnable() {
+			  public void run() {
+			    readADKLoop();
+			  }
+			}, "ADKConnect");
+			readThread.start();
+
+			Log.d(TAG, "accessory open OK, will call setReady");
+	
+			setReady();
 		} else {
-      mLogPanel.append("accessory open fail\n");
 			Log.d(TAG, "accessory open fail");
 		}
 	}
 
 	private void closeAccessory() {
-		enableControls(false);
-
 		try {
-			if (mFileDescriptor != null) {
-				mFileDescriptor.close();
-			}
+			if (mFileDescriptor != null) mFileDescriptor.close();
 		} catch (IOException e) {
 		} finally {
 			mFileDescriptor = null;
@@ -242,17 +193,6 @@ public class AccessoryController extends Controller implements Runnable {
 		}
 	}
 
-	protected void enableControls(boolean enable) {
-	}
-
-	protected void logToWindow(final String message) {
-	  mUiHandler.post(new Runnable() {
-      public void run() {
-        mLogPanel.setText(message);
-      }
-    });
-	}
-	
   private final byte BUTTON_FIRE=0;
   private final byte BUTTON_SHIELD=1;
   private final byte BUTTON_DOWN=2;
@@ -260,15 +200,20 @@ public class AccessoryController extends Controller implements Runnable {
   private final byte BUTTON_UP=4;
   private final byte BUTTON_RIGHT=5;
  
-  public void run() {
+  public void readADKLoop() {
 		int ret = 0;
 		byte[] buffer = new byte[16384];
 		int i;
 
 		while (ret >= 0) {
+		  if (mInputStream==null) {
+        Log.w(TAG, "null mInputStream... stopping read loop");
+		    break;
+		  }
 			try {
 				ret = mInputStream.read(buffer);
 			} catch (IOException e) {
+			  Log.w(TAG, "error while reading mInputStream... stopping read loop", e);
 				break;
 			}
 
@@ -276,7 +221,7 @@ public class AccessoryController extends Controller implements Runnable {
 			while (i < ret) {
 				int len = ret - i;
 
-				logToWindow("got message from accessory:"+len+"bytes - first is 0x"+Integer.toHexString(buffer[i])+"\n");
+				Log.d(TAG, "got message from accessory:"+len+"bytes - first is 0x"+Integer.toHexString(buffer[i])+"\n");
 
 				if (buffer[i]==1) {  // buttons
           if (len == 3) {
@@ -285,15 +230,16 @@ public class AccessoryController extends Controller implements Runnable {
             mHandler.sendMessage(m);
           }
           i += len;
+				} else if (buffer[i]==2) {  // coin
+            mHandler.sendMessage(Message.obtain(mHandler, buffer[i]));
+            i += len;
 				} else {
 				  String message="unknown msg: " + buffer[i];
 			    Log.d(TAG, message);
-			    logToWindow(message+"\n");
 					i = len;
 					break;
 				}
 			}
-
 		}
 	}
 
@@ -301,10 +247,12 @@ public class AccessoryController extends Controller implements Runnable {
 		@Override
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
-			case 1:  // the only message type currently supported
-				SwitchMsg o = (SwitchMsg) msg.obj;
-				handleSwitchMessage(o);
+			case 1:  // all buttons except coin
+				handleSwitchMessage((SwitchMsg) msg.obj);
 				break;
+      case 2:  // coin
+        handleCoinMessage(msg);
+        break;
 			}
 		}
 	};
@@ -322,38 +270,86 @@ public class AccessoryController extends Controller implements Runnable {
 			try {
 				mOutputStream.write(buffer);
 			} catch (IOException e) {
-				Log.e(TAG, "write failed", e);
+        Log.e(TAG, "write failed "+e.getMessage());
 			}
 		}
 	}
 
-	protected void handleSwitchMessage(SwitchMsg o) {
-    String message="button pressed="+o.getButton()+" state="+o.getState();
-    Log.d(TAG, message);
-    logToWindow(message+"\n");
+	protected BitSet bufferedState=new BitSet(8);
+	protected boolean specialCodeCoin=false;
+	
+  protected void handleSwitchMessage(SwitchMsg o) {
+    Log.d(TAG, "button pressed="+o.getButton()+" state="+o.getState());
     if (getInputListener()!=null) {
+      bufferedState.set(o.getButton(), o.getState()==1);
+      checkSpecialCode();
       ButtonState state=o.getState()==0?ButtonState.PRESS:ButtonState.RELEASE;
       switch (o.getButton()) {
       case (BUTTON_FIRE): 
         getInputListener().onButton(ButtonType.FIRE, state);
         getInputListener().onButton(ButtonType.START1, state);
         break;
-      case (BUTTON_SHIELD): getInputListener().onButton(ButtonType.SHIELD, state);break;
-      case (BUTTON_DOWN): getInputListener().onJoystick(Direction.DOWN, state); break;
-      case (BUTTON_UP): 
-        getInputListener().onJoystick(Direction.UP, state); 
-        if (state==ButtonState.RELEASE) getInputListener().onCoinInserted(); 
+      case (BUTTON_SHIELD): 
+        getInputListener().onButton(ButtonType.SHIELD, state);
+        getInputListener().onButton(ButtonType.START2, state);
         break;
+      case (BUTTON_DOWN): 
+      case (BUTTON_UP): break;
       case (BUTTON_LEFT): getInputListener().onJoystick(Direction.LEFT, state); break;
       case (BUTTON_RIGHT): getInputListener().onJoystick(Direction.RIGHT, state); break;
       }
     }
-	}
+  }
+  
+  protected void checkSpecialCode() {
+    if (bufferedState.get(BUTTON_FIRE) && 
+        bufferedState.get(BUTTON_SHIELD) && 
+        bufferedState.get(BUTTON_UP)) {
+      if (!specialCodeCoin) {
+        getInputListener().onCoinInserted();
+        specialCodeCoin=true;
+      }
+    } else {
+      specialCodeCoin=false;
+    }
+  }
+  
+  protected void handleCoinMessage(Message o) {
+    String message="coin inserted data="+o.getData();
+    Log.d(TAG, message);
+    if (getInputListener()!=null) {
+      getInputListener().onCoinInserted();
+    }
+  }
 
-	@Override
-	public void setOnlistener(View view) {
-		// FIXME Auto-generated method stub
-		
-	}
+  
+  // Lifecycle methods:
+  @Override
+  public void handleResume() {
+    requestPermission();
+  }
 
+  @Override
+  public Object getObjectToRetain() {
+    if (mAccessory != null) {
+      return mAccessory;
+    }
+    return null;
+  }
+  
+  @Override
+  public void handlePause() {
+    closeAccessory();
+  }
+
+  @Override
+  public void handleDestroy() {
+    Log.d(TAG, "destroyed... mAccessory "+(mAccessory==null?"null":"NOT null")+"\n");
+    try {
+      mActivity.get().unregisterReceiver(mUsbReceiver);
+    } catch (IllegalArgumentException ex) {}
+  }
+
+  
+  
 }

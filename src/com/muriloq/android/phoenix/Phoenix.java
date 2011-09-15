@@ -301,26 +301,33 @@ public class Phoenix extends i8080 {
       }
     }
 
-    // Hi Score Saving - Thanks MAME ! :)
-    if ( addr == 0x438c ) {
-      if ( newByte == 0x0f ) {
-        mem[addr]=newByte;
+    if ( addr >= 0x4000 ) {   // 0x0000 - 0x3fff Program ROM 
+      mem [addr]=newByte; 
+    }
+
+//    // Hi Score Saving - Thanks MAME ! :)
+    /* commented by Mangini... check the previous version, because there are a lot of tests done in this section...
+    if ( addr == 0x438c){
+//      if ( newByte == 0x0f ) {
+//        mem[addr]=newByte;
         int hiScore = getScore(0x4388);
-        if ( hiScore > savedHiScore ) hisave();
-        if ( hiScore < savedHiScore ) hiload();
-    	this.view.getController().showScore(Controller.PLAYER_ONE,new byte[]{
+        //if ( hiScore > savedHiScore ) hisave();
+        //if ( hiScore < savedHiScore ) hiload();
+        Log.d(TAG, "High Score:"+hiScore);
+
+    	this.view.showScore(Controller.HI_SCORE,new byte[]{
         		(byte) peekb(0x4388),
         		(byte) peekb(0x4389),
         		(byte) peekb(0x438a),
         		(byte) peekb(0x438b)}
        	);
-      }
-    }
+//      }
+    }*/
+
 
     if ( addr >= 0x4380 && addr <= 0x4383 ){
-    	int score = getScore(0x4380); 
-    	System.out.println("1P Score:"+score);
-    	this.view.getController().showScore(Controller.PLAYER_ONE,new byte[]{
+    	int score = getScore(0x4380);
+    	this.view.showScore(Controller.PLAYER_ONE, score, new byte[]{
     		(byte) peekb(0x4380),
     		(byte) peekb(0x4381),
     		(byte) peekb(0x4382),
@@ -330,17 +337,12 @@ public class Phoenix extends i8080 {
 
     if ( addr >= 0x4384 && addr <= 0x4387 ){
     	int score = getScore(0x4384); 
-    	System.out.println("2P Score:"+score);
-    	this.view.getController().showScore(Controller.PLAYER_TWO,new byte[]{
+    	this.view.showScore(Controller.PLAYER_TWO, score, new byte[]{
       	  (byte) peekb(0x4384),
        	  (byte) peekb(0x4385),
        	  (byte) peekb(0x4386),
        	  (byte) peekb(0x4387)}
        	);
-    }
-
-    if ( addr >= 0x4000 ) {   // 0x0000 - 0x3fff Program ROM 
-      mem [addr]=newByte; 
     }
 
     return;
@@ -542,7 +544,7 @@ public class Phoenix extends i8080 {
   }
 
 
-  public void refreshScreen () {
+  public synchronized void refreshScreen () {
     if (backBitmap==null)
       this.backBitmap = Bitmap.createBitmap(WIDTH_PIXELS, HEIGHT_PIXELS, Config.ARGB_8888);
 
@@ -604,9 +606,10 @@ public class Phoenix extends i8080 {
 
   }
 
-  public void onDraw(Canvas canvas){
+  public synchronized void onDraw(Canvas canvas){
     if ((backBitmap==null) || (frontBitmap == null))
       return; 
+
     paint.setColor(OPAQUE_BLACK);
     workCanvas.drawRect(0, 0, WIDTH, HEIGHT, paint);
 
@@ -636,6 +639,7 @@ public class Phoenix extends i8080 {
 
     if (getFrameSkip() != 1)
       canvas.drawText(Integer.toString((int)getFrameSkip()),WIDTH-16,HEIGHT-16, paint);
+    
   }
 
   public void decodeChars (Canvas canvas) {

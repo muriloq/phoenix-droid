@@ -23,7 +23,9 @@ public class ScreenController extends Controller {
   
   private View mControllerView;
   public boolean mPlay; //To stop AutoFire
+  private Handler mHandler=new Handler();
   private Button mBtFire; 
+
   OnTouchListener onTouch = new View.OnTouchListener() {
       @Override
       public boolean onTouch(View v, MotionEvent event) {
@@ -68,11 +70,16 @@ public class ScreenController extends Controller {
         }
       }
     });
+    mControllerView.setOnTouchListener(onTouch);
+    
   }
 
-  private Handler mHandler=new Handler();
-
-
+  @Override
+  public void setReadyListener(ReadyListener controllerListener) {
+    super.setReadyListener(controllerListener);
+    // we are always ready, so call listener immediately 
+    if (controllerListener!=null) controllerListener.controlerReady();
+  }
   
   class RestoreButtonState implements Runnable {
     private ButtonType type;
@@ -151,27 +158,19 @@ public class ScreenController extends Controller {
   }
 
 	@Override
-	public void setOnlistener(View view) {
-		view.setOnTouchListener(onTouch);
+	public void handleDestroy() {
+    mPlay=false;
 	}
-	
+
 	@Override
-	public void onStop() {
-		onPause();
+	public void handlePause() {
+    mPlay=false;
 	}
-	
+
 	@Override
-	public void onPause() {
-		mPlay=false;
-	}
-	
-	@Override
-	public void onRestart() {
+	public void handleResume() {
 		if(!mBtFire.isEnabled()) {			
 			startAutofire();
 		}
 	}
-
-
- 
 }
